@@ -57,7 +57,7 @@ class Linear(Module):
         assert input.shape[1] == self._input_dim, "Input dimensions must match weight dimensions"
         assert delta.shape[1] == self._output_dim, "Delta dimensions must match weight dimensions"
         return delta @ self._parameters.T
-    
+
     def update_parameters(self, learning_rate=1e-3):
         self._parameters -= learning_rate * self._gradient
         if self._has_bias:
