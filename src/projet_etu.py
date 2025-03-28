@@ -111,52 +111,6 @@ def train_binary_classification_linear():
     plot_classification(X_train, y_train, X_test, y_test, predict, num_epochs, losses)
 
 def train_binary_classification():
-    # np.random.seed(42)
-    # X_train, y_train = gen_arti(nbex=1000, data_type=1, epsilon=0.0)
-    # X_test, y_test = gen_arti(nbex=1000, data_type=1, epsilon=0.0)
-    # input_dim = X_train.shape[1]
-    # output_dim = 1
-
-    # y_train = np.where(y_train == -1, 0, 1).reshape((-1, 1))
-    # y_test = np.where(y_test == -1, 0, 1).reshape((-1, 1))
-
-    # num_epochs = 1000
-    # learning_rate = 1e-4
-    # batch_size = 100
-    # num_batches = X_train.shape[0] // batch_size
-    # loss_fn = MSELoss()
-    # network = Sequential(
-    #     Linear(input_dim, 128),
-    #     TanH(),
-    #     Linear(128, output_dim),
-    #     Sigmoid()
-    # )
-
-    # losses = []
-    # for epoch in range(num_epochs):
-    #     epoch_loss = 0
-    #     for batch in range(num_batches):
-    #         start = batch * batch_size
-    #         end = start + batch_size
-    #         X_batch = X_train[start:end]
-    #         y_batch = y_train[start:end]
-
-    #         Y_pred = network.forward(X_batch)
-    #         loss = loss_fn.forward(y_batch, Y_pred).mean()
-    #         epoch_loss += loss
-    #         grad_loss = loss_fn.backward(y_batch, Y_pred)
-    #         network.backward(grad_loss)
-    #         network.update_parameters(learning_rate)
-    #         network.zero_grad()
-        
-    #     losses.append(epoch_loss / num_batches)
-
-    # def predict(X):
-    #     Y_pred = network.forward(X)
-    #     return np.where(Y_pred >= 0.5, 1, 0)
-    
-    # plot_classification(X_train, y_train, X_test, y_test, predict, num_epochs, losses)
-
     np.random.seed(42)
     X_train, y_train = gen_arti(nbex=1000, data_type=1, epsilon=0.0)
     X_test, y_test = gen_arti(nbex=1000, data_type=1, epsilon=0.0)
@@ -169,40 +123,25 @@ def train_binary_classification():
     num_epochs = 1000
     learning_rate = 1e-4
     loss_fn = MSELoss()
-    layer1 = Linear(input_dim, 128)
-    activation1 = TanH()
-    layer2 = Linear(128, output_dim)
-    activation2 = Sigmoid()
+    network = Sequential(
+        Linear(input_dim, 60),
+        TanH(),
+        Linear(60, output_dim),
+        Sigmoid()
+    )
 
     losses = []
     for epoch in range(num_epochs):
-        hidden1 = layer1.forward(X_train)
-        activated1 = activation1.forward(hidden1)
-        hidden2 = layer2.forward(activated1)
-        Y_pred = activation2.forward(hidden2)
-
+        Y_pred = network.forward(X_train)
         loss = loss_fn.forward(y_train, Y_pred).mean()
         losses.append(loss)
-
         grad_loss = loss_fn.backward(y_train, Y_pred)
-        grad_hidden2 = activation2.backward_delta(hidden2, grad_loss)
-        grad_activated1 = layer2.backward_delta(activated1, grad_hidden2)
-        grad_hidden1 = activation1.backward_delta(hidden1, grad_activated1)
-
-        layer2.backward_update_gradient(activated1, grad_hidden2)
-        layer1.backward_update_gradient(X_train, grad_hidden1)
-
-        layer2.update_parameters(learning_rate)
-        layer1.update_parameters(learning_rate)
-
-        layer2.zero_grad()
-        layer1.zero_grad()
+        network.backward(grad_loss)
+        network.update_parameters(learning_rate)
+        network.zero_grad()
 
     def predict(X):
-        hidden1 = layer1.forward(X)
-        activated1 = activation1.forward(hidden1)
-        hidden2 = layer2.forward(activated1)
-        Y_pred = activation2.forward(hidden2)
+        Y_pred = network.forward(X)
         return np.where(Y_pred >= 0.5, 1, 0)
     
     plot_classification(X_train, y_train, X_test, y_test, predict, num_epochs, losses)
