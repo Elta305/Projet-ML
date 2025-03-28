@@ -16,15 +16,17 @@
             allowUnfree = true;
           };
         };
-        python = pkgs.python311;
+        python = pkgs.python313;
         pythonPackages = python.pkgs;
         devPkgs = with pkgs; [
           just
+          typst
           python
         ];
         pythonPkgs = with pythonPackages; [
-          numpy
-          matplotlib
+          uv
+          # numpy
+          # matplotlib
         ];
       in {
         app.default = {
