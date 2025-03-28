@@ -28,7 +28,6 @@ def plot_linear_regression_result(X, Y, Y_pred):
     plt.show()
 
 def linear_regression():
-    np.random.seed(42)
     X = 2 * np.random.rand(100, 1)
     Y = 4 + 3 * X + np.random.randn(100, 1)
 
@@ -80,8 +79,7 @@ def plot_classification(X_train, y_train, X_test, y_test, predict, iteration, lo
     plt.show()
     print(np.array(losses).shape)
 
-def train_binary_classification():
-    np.random.seed(42)
+def train_binary_classification_linear():
     X_train, y_train = gen_arti(nbex=1000, data_type=0, epsilon=0.5)
     X_test, y_test = gen_arti(nbex=1000, data_type=0, epsilon=0.5)
     input_dim = X_train.shape[1]
@@ -98,15 +96,113 @@ def train_binary_classification():
     losses = []
     for epoch in range(num_epochs):
         Y_pred = layer.forward(X_train)
-        loss = loss_fn.forward(y_train, Y_pred).mean()
-        losses.append(loss)
         loss_back = loss_fn.backward(y_train, Y_pred)
+        loss = loss_back.mean()
+        losses.append(loss)
+        # delta = layer.backward_delta(X_train, loss_back)
         layer.backward_update_gradient(X_train, loss_back)
         layer.update_parameters(learning_rate)
         layer.zero_grad()
 
     def predict(X):
         Y_pred = layer.forward(X)
+        return np.where(Y_pred >= 0.5, 1, 0)
+    
+    plot_classification(X_train, y_train, X_test, y_test, predict, num_epochs, losses)
+
+def train_binary_classification():
+    # np.random.seed(42)
+    # X_train, y_train = gen_arti(nbex=1000, data_type=1, epsilon=0.0)
+    # X_test, y_test = gen_arti(nbex=1000, data_type=1, epsilon=0.0)
+    # input_dim = X_train.shape[1]
+    # output_dim = 1
+
+    # y_train = np.where(y_train == -1, 0, 1).reshape((-1, 1))
+    # y_test = np.where(y_test == -1, 0, 1).reshape((-1, 1))
+
+    # num_epochs = 1000
+    # learning_rate = 1e-4
+    # batch_size = 100
+    # num_batches = X_train.shape[0] // batch_size
+    # loss_fn = MSELoss()
+    # network = Sequential(
+    #     Linear(input_dim, 128),
+    #     TanH(),
+    #     Linear(128, output_dim),
+    #     Sigmoid()
+    # )
+
+    # losses = []
+    # for epoch in range(num_epochs):
+    #     epoch_loss = 0
+    #     for batch in range(num_batches):
+    #         start = batch * batch_size
+    #         end = start + batch_size
+    #         X_batch = X_train[start:end]
+    #         y_batch = y_train[start:end]
+
+    #         Y_pred = network.forward(X_batch)
+    #         loss = loss_fn.forward(y_batch, Y_pred).mean()
+    #         epoch_loss += loss
+    #         grad_loss = loss_fn.backward(y_batch, Y_pred)
+    #         network.backward(grad_loss)
+    #         network.update_parameters(learning_rate)
+    #         network.zero_grad()
+        
+    #     losses.append(epoch_loss / num_batches)
+
+    # def predict(X):
+    #     Y_pred = network.forward(X)
+    #     return np.where(Y_pred >= 0.5, 1, 0)
+    
+    # plot_classification(X_train, y_train, X_test, y_test, predict, num_epochs, losses)
+
+    np.random.seed(42)
+    X_train, y_train = gen_arti(nbex=1000, data_type=1, epsilon=0.0)
+    X_test, y_test = gen_arti(nbex=1000, data_type=1, epsilon=0.0)
+    input_dim = X_train.shape[1]
+    output_dim = 1
+
+    y_train = np.where(y_train == -1, 0, 1).reshape((-1, 1))
+    y_test = np.where(y_test == -1, 0, 1).reshape((-1, 1))
+
+    num_epochs = 1000
+    learning_rate = 1e-4
+    loss_fn = MSELoss()
+    layer1 = Linear(input_dim, 128)
+    activation1 = TanH()
+    layer2 = Linear(128, output_dim)
+    activation2 = Sigmoid()
+
+    losses = []
+    for epoch in range(num_epochs):
+        hidden1 = layer1.forward(X_train)
+        activated1 = activation1.forward(hidden1)
+        hidden2 = layer2.forward(activated1)
+        Y_pred = activation2.forward(hidden2)
+
+        loss = loss_fn.forward(y_train, Y_pred).mean()
+        losses.append(loss)
+
+        grad_loss = loss_fn.backward(y_train, Y_pred)
+        grad_hidden2 = activation2.backward_delta(hidden2, grad_loss)
+        grad_activated1 = layer2.backward_delta(activated1, grad_hidden2)
+        grad_hidden1 = activation1.backward_delta(hidden1, grad_activated1)
+
+        layer2.backward_update_gradient(activated1, grad_hidden2)
+        layer1.backward_update_gradient(X_train, grad_hidden1)
+
+        layer2.update_parameters(learning_rate)
+        layer1.update_parameters(learning_rate)
+
+        layer2.zero_grad()
+        layer1.zero_grad()
+
+    def predict(X):
+        hidden1 = layer1.forward(X)
+        activated1 = activation1.forward(hidden1)
+        hidden2 = layer2.forward(activated1)
+        Y_pred = activation2.forward(hidden2)
         return np.where(Y_pred >= 0.5, 1, 0)
     
     plot_classification(X_train, y_train, X_test, y_test, predict, num_epochs, losses)
@@ -121,7 +217,7 @@ def mnist_classification():
 
     input_dim, hidden_dim, output_dim = 784, 128, 10
     epochs = 10
-    lr = 0.01
+    lr = 1e-4
     network = Sequential(
         Linear(input_dim, hidden_dim),
         TanH(),
@@ -130,21 +226,32 @@ def mnist_classification():
     )
 
     loss_fn = CrossEntropyLoss()
-    X_train = np.concatenate([batch[0].view(-1, 28 * 28).numpy() for batch in train_loader])
-    Y_train = np.concatenate([np.eye(10)[batch[1].numpy()] for batch in train_loader])
-    batch_size = 64
-    optimizer = Optim(network, loss_fn, lr)
-    optimizer.SGD(X_train, Y_train, batch_size, epochs)
+    losses = []
+    for epoch in range(epochs):
+        for images, labels in train_loader:
+            images = images.view(-1, 28 * 28).numpy()
+            labels = np.eye(output_dim)[labels.numpy()]
 
-    correct = 0
-    total = 0
-    with torch.no_grad():
-        for batch_x, batch_y in test_loader:
-            batch_x = batch_x.view(-1, 28 * 28)
-            y_pred_test = network.forward(batch_x)
-            predictions = torch.argmax(y_pred_test, axis=1)
-            correct += (predictions == batch_y).sum().item()
-            total += batch_y.size(0)
+            outputs = network.forward(images)
+            loss = loss_fn.forward(labels, outputs).mean()
+            losses.append(loss)
+
+            grad_loss = loss_fn.backward(labels, outputs)
+            network.backward(grad_loss)
+            network.update_parameters(lr)
+            network.zero_grad()
+
+        print(f"Epoch {epoch + 1}/{epochs}, Loss: {loss:.4f}")
+
+    correct, total = 0, 0
+    for images, labels in test_loader:
+        images = images.view(-1, 28 * 28).numpy()
+        labels = labels.numpy()
+
+        outputs = network.forward(images)
+        predictions = np.argmax(outputs, axis=1)
+        correct += (predictions == labels).sum()
+        total += labels.size
 
     accuracy = correct / total
     print(f"Test Accuracy: {accuracy * 100:.2f}%")
@@ -154,7 +261,8 @@ if __name__ == "__main__":
     # linear_regression()
 
     # print("Partie 2")
-    # train_binary_classification()
+    # train_binary_classification_linear()
+    train_binary_classification()
 
     # print("Partie 4")
-    mnist_classification()
+    # mnist_classification()

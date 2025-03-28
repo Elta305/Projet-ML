@@ -63,9 +63,8 @@ class Linear(Module):
         if self._has_bias:
             self._bias -= learning_rate * self._gradient_bias
 
-class Sequential(Module):
+class Sequential:
     def __init__(self, *modules):
-        super().__init__()
         self.modules = modules
         self.inputs = []
     
