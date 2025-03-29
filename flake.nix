@@ -22,18 +22,31 @@
           just
           typst
           python
+          stdenv.cc.cc.lib
+          libz
+          (texlive.combine {
+            inherit
+              (texlive)
+              scheme-full
+              adjustbox
+              collectbox
+              tcolorbox
+              pgf
+              xetex
+              ;
+          })
         ];
         pythonPkgs = with pythonPackages; [
           uv
-          # numpy
-          # matplotlib
+          tkinter
         ];
       in {
         app.default = {
         };
         devShells.default = pkgs.mkShell {
-          buildInputs = devPkgs ++ pythonPkgs;
+          nativeBuildInputs = devPkgs ++ pythonPkgs;
           shellHook = ''
+            export LD_LIBRARY_PATH="${pkgs.stdenv.cc.cc.lib}/lib:${pkgs.zlib}/lib:$LD_LIBRARY_PATH"
           '';
         };
       }
