@@ -7,6 +7,8 @@ from activation_func import *
 from module import *
 from optimizers import *
 from mltools import *
+from sklearn.cluster import KMeans
+from sklearn.manifold import TSNE
 
 def plot_loss(losses, num_epochs, title='Training Loss over Epochs'):
     plt.figure(figsize=(10, 5))
@@ -111,7 +113,6 @@ def train_binary_classification_linear():
     plot_classification(X_train, y_train, X_test, y_test, predict, num_epochs, losses)
 
 def train_binary_classification():
-    np.random.seed(42)
     X_train, y_train = gen_arti(nbex=1000, data_type=1, epsilon=0.0)
     X_test, y_test = gen_arti(nbex=1000, data_type=1, epsilon=0.0)
     input_dim = X_train.shape[1]
@@ -120,13 +121,53 @@ def train_binary_classification():
     y_train = np.where(y_train == -1, 0, 1).reshape((-1, 1))
     y_test = np.where(y_test == -1, 0, 1).reshape((-1, 1))
 
-    num_epochs = 1000
+    num_epochs = 100
+    learning_rate = 1e-4
+    loss_fn = MSELoss()
+    layer1 = Linear(input_dim, 128)
+    activation1 = TanH()
+    layer2 = Linear(128, output_dim)
+    activation2 = Sigmoid()
+
+    losses = []
+    for epoch in range(num_epochs):
+        hidden1 = layer1.forward(X_train)
+        activated1 = activation1.forward(hidden1)
+        hidden2 = layer2.forward(activated1)
+        Y_pred = activation2.forward(hidden2)
+
+        loss = loss_fn.forward(y_train, Y_pred).mean()
+        losses.append(loss)
+        grad_loss = loss_fn.backward(y_train, Y_pred)
+        grad_hidden2 = activation2.backward_delta(hidden2, grad_loss)
+        grad_activated1 = layer2.backward_delta(activated1, grad_hidden2)
+        grad_hidden1 = activation1.backward_delta(hidden1, grad_activated1)
+
+        layer2.backward_update_gradient(activated1, grad_hidden2)
+        layer1.backward_update_gradient(X_train, grad_hidden1)
+
+        layer2.update_parameters(learning_rate)
+        layer1.update_parameters(learning_rate)
+
+        layer2.zero_grad()
+        layer1.zero_grad()
+
+def train_binary_classification_seq():
+    X_train, y_train = gen_arti(nbex=1000, data_type=1, epsilon=0.0)
+    X_test, y_test = gen_arti(nbex=1000, data_type=1, epsilon=0.0)
+    input_dim = X_train.shape[1]
+    output_dim = 1
+
+    y_train = np.where(y_train == -1, 0, 1).reshape((-1, 1))
+    y_test = np.where(y_test == -1, 0, 1).reshape((-1, 1))
+
+    num_epochs = 100
     learning_rate = 1e-4
     loss_fn = MSELoss()
     network = Sequential(
-        Linear(input_dim, 60),
-        TanH(),
-        Linear(60, output_dim),
+        Linear(input_dim, 64),
+        Sigmoid(),
+        Linear(64, output_dim),
         Sigmoid()
     )
 
@@ -201,7 +242,10 @@ if __name__ == "__main__":
 
     # print("Partie 2")
     # train_binary_classification_linear()
-    train_binary_classification()
+    # train_binary_classification()
+    train_binary_classification_seq()
 
     # print("Partie 4")
     # mnist_classification()
+
+    # print("Partie 5")
