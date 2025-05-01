@@ -151,6 +151,15 @@ def train_binary_classification():
 
         layer2.zero_grad()
         layer1.zero_grad()
+    
+    def predict(X):
+        hidden1 = layer1.forward(X)
+        activated1 = activation1.forward(hidden1)
+        hidden2 = layer2.forward(activated1)
+        Y_pred = activation2.forward(hidden2)
+        return np.where(Y_pred >= 0.5, 1, 0)
+    
+    plot_classification(X_train, y_train, X_test, y_test, predict, num_epochs, losses)
 
 def train_binary_classification_seq():
     X_train, y_train = gen_arti(nbex=1000, data_type=1, epsilon=0.0)
@@ -166,7 +175,7 @@ def train_binary_classification_seq():
     loss_fn = MSELoss()
     network = Sequential(
         Linear(input_dim, 64),
-        Sigmoid(),
+        TanH(),
         Linear(64, output_dim),
         Sigmoid()
     )
