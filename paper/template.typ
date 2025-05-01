@@ -54,7 +54,7 @@
     #v(0.2cm)
     #set align(center)
     #set text(13pt, weight: 500)
-    #smallcaps(it.body)
+    #pad(x: 1cm, smallcaps(it.body))
     #v(0.2cm)
   ]
 
@@ -356,7 +356,7 @@
 ]) }
 
 #let algorithm(title: none, input: none, output: none, steps: ()) = {
-  figure(canvas(length: 100%, {
+  canvas(length: 100%, {
     import draw: *
 
     if title != none {
@@ -366,17 +366,15 @@
     }
 
     if input != none {
-      content((2em, -1.8em), anchor: "north-west", [ *Entrée* : #input ])
+      content((2em, -1.8em), anchor: "north-west", [ *Input*: #input ])
     }
     if output != none {
-      content((2em, -3.0em), anchor: "north-west", [ *Sortie* : #output ])
+      content((2em, -3.0em), anchor: "north-west", [ *Ouput*: #output ])
     }
 
     for (i, step) in steps.enumerate() {
-
-
       content(
-        (1em, -4.2em - i * 1.2em),
+        (1em, -4.4em - i * 1.2em),
         anchor: "north-east",
         text(size: 0.8em, weight: 700)[ #(i + 1) ],
       )
@@ -386,13 +384,13 @@
       }
 
       content(
-        (2em + step.depth * 1em, -4.2em - i * 1.2em),
+        (2em + step.depth * 1em, -4.4em - i * 1.2em),
         anchor: "north-west",
         step.line
       )
   }
 
-  }))
+  })
 }
 
 #let bar(value) = math.accent(value, "-")
