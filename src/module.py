@@ -2,8 +2,8 @@ import numpy as np
 
 class Module(object):
     def __init__(self):
-        self._parameters = np.array([])
-        self._gradient = np.array([])
+        self._parameters = None
+        self._gradient = None
 
     def zero_grad(self):
         pass
@@ -26,20 +26,21 @@ class Linear(Module):
         self._input_dim = input_dim
         self._output_dim = output_dim
         self._has_bias = has_bias
-        self._parameters = np.random.randn(input_dim, output_dim)
-        self._bias = np.random.randn(1, output_dim)
-        self._gradient = np.zeros_like(self._parameters)
-        self._gradient_bias = np.zeros_like(self._bias)
 
-        if not self._has_bias:
-            self._bias = None
-            self._gradient_bias = None
+        std_dev = np.sqrt(2 / self._input_dim)
+        self._parameters = np.random.normal(0, std_dev, (self._input_dim, self._output_dim))
+        self._gradient = np.zeros_like(self._parameters)
+
+        if self._has_bias:
+            self._bias = np.random.uniform(0.0, std_dev, (1, self._output_dim))
+            self._gradient_bias = np.zeros_like(self._bias)
 
     def forward(self, X):
         assert X.shape[1] == self._input_dim, "Input dimensions must match weight dimensions"
+        self.output = X @ self._parameters
         if self._has_bias:
-            return X @ self._parameters + self._bias
-        return X @ self._parameters
+            return self.output + self._bias
+        return self.output
     
     def zero_grad(self):
         self._gradient.fill(0)

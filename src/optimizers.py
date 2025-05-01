@@ -16,13 +16,15 @@ class Optim:
         return loss
 
     def SGD(self, data_x, data_y, batch_size, num_iterations):
+        losses = []
         for _ in range(num_iterations):
             indices = np.random.permutation(len(data_x))
             for i in range(0, len(data_x), batch_size):
                 batch_indices = indices[i:i+batch_size]
                 batch_x = data_x[batch_indices]
                 batch_y = data_y[batch_indices]
-                self.step(batch_x, batch_y)
+                losses.append(self.step(batch_x, batch_y))
+        return losses
 
 class AdamOptimizer(Optim):
     def __init__(self, net, loss, eps, beta1=0.9, beta2=0.999):

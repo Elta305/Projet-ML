@@ -29,3 +29,17 @@ class CrossEntropyLoss(Loss):
     
     def backward(self, y, yhat):
         return yhat - y
+
+class BCELoss(Loss):
+    def __init__(self):
+        super().__init__()
+
+    def forward(self, y, yhat):
+        assert y.shape == yhat.shape, "y and yhat must have the same shape"
+        yhat_1, yhat_2 = np.clip(yhat, 1e-12, 1), np.clip(1-yhat, 1e-12, 1)
+        return - np.mean(y * np.log(yhat_1) + (1 - y) * np.log(yhat_2))
+
+    def backward(self, y, yhat):
+        assert y.shape == yhat.shape, "y and yhat must have the same shape"
+        yhat_1, yhat_2 = np.clip(yhat, 1e-12, 1), np.clip(1-yhat, 1e-12, 1)
+        return - ((y / yhat_1) - (1 - y) / (yhat_2)) / y.shape[0]
