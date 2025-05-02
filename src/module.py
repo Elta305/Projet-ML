@@ -113,12 +113,9 @@ class AutoEncoder:
         self.encoder.zero_grad()
         self.decoder.zero_grad()
 
-    def step(self, lr):
-        self.encoder.update_parameters(lr)
-        self.decoder.update_parameters(lr)
-
     def encode(self, x):
         return self.encoder.forward(x)
-
-    def reconstruct(self, x):
-        return self.forward(x)
+    
+    def update_parameters(self, learning_rate=1e-3):
+        self.encoder.update_parameters(learning_rate)
+        self.decoder.update_parameters(learning_rate)
