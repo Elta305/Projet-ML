@@ -81,6 +81,7 @@ class Sequential:
         for i, module in enumerate(reversed(self.modules)):
             module.backward_update_gradient(self.inputs[i+1], delta)
             delta = module.backward_delta(self.inputs[i+1], delta)
+        return delta
     
     def update_parameters(self, learning_rate=1e-3):
         for module in self.modules:
@@ -89,3 +90,35 @@ class Sequential:
     def zero_grad(self):
         for module in self.modules:
             module.zero_grad()
+
+class AutoEncoder:
+    def __init__(self, encoder, decoder, loss_fn):
+        self.encoder = encoder
+        self.decoder = decoder
+        self.loss_fn = loss_fn
+
+    def forward(self, x):
+        z = self.encoder.forward(x)
+        x_hat = self.decoder.forward(z)
+        return x_hat
+
+    def backward(self, x, x_hat):
+        loss = self.loss_fn.forward(x, x_hat)
+        dloss = self.loss_fn.backward(x, x_hat)
+        dz = self.decoder.backward(dloss)
+        self.encoder.backward(dz)
+        return loss
+
+    def zero_grad(self):
+        self.encoder.zero_grad()
+        self.decoder.zero_grad()
+
+    def step(self, lr):
+        self.encoder.update_parameters(lr)
+        self.decoder.update_parameters(lr)
+
+    def encode(self, x):
+        return self.encoder.forward(x)
+
+    def reconstruct(self, x):
+        return self.forward(x)
