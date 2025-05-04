@@ -32,7 +32,7 @@ class Linear(Module):
         self._gradient = np.zeros_like(self._parameters)
 
         if self._has_bias:
-            self._bias = np.random.uniform(0.0, std_dev, (1, self._output_dim))
+            self._bias = np.random.normal(0, std_dev, (1, self._output_dim))
             self._gradient_bias = np.zeros_like(self._bias)
 
     def forward(self, X):
@@ -90,6 +90,28 @@ class Sequential:
     def zero_grad(self):
         for module in self.modules:
             module.zero_grad()
+
+    def state_dict(self):
+        state = {}
+        for module in self.modules:
+            if isinstance(module, Linear):
+                state[module] = {
+                    '_parameters': module._parameters.copy(),
+                    '_gradient': module._gradient.copy()
+                }
+                if module._has_bias:
+                    state[module]['_bias'] = module._bias.copy()
+                    state[module]['_gradient_bias'] = module._gradient_bias.copy()
+        return state
+
+    def load_state_dict(self, state_dict):
+        for module in self.modules:
+            if isinstance(module, Linear):
+                module._parameters = state_dict[module]['_parameters']
+                module._gradient = state_dict[module]['_gradient']
+                if module._has_bias:
+                    module._bias = state_dict[module]['_bias']
+                    module._gradient_bias = state_dict[module]['_gradient_bias']
 
 class AutoEncoder:
     def __init__(self, encoder, decoder, loss_fn):
