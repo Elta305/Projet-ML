@@ -83,12 +83,17 @@ def gen_arti(centerx=1,centery=1,sigma=0.1,nbex=1000,data_type=0,epsilon=0.02):
     y=y[idx]
     return data,y.reshape(-1, 1)
 
+def normalize_images(X):
+    X = X.astype(np.float32)
+    X = (X - np.min(X)) / (np.max(X) - np.min(X))
+    return X
+
 def load_usps(fn):
     with open(fn,"r") as f:
         f.readline()
         data = [[float(x) for x in l.split()] for l in f if len(l.split())>2]
-    tmp=np.array(data)
-    return tmp[:,1:],tmp[:,0].astype(int)
+    tmp = np.array(data)
+    return normalize_images(tmp[:, 1:]), tmp[:, 0].astype(int)
 
 def get_usps(l,datax,datay):
     if type(l)!=list:
@@ -101,3 +106,11 @@ def get_usps(l,datax,datay):
 
 def show_usps(data):
     plt.imshow(data.reshape((16,16)),interpolation="nearest",cmap="gray")
+
+def onehotencoder(labels, num_classes=None):
+    labels = labels.flatten()
+    if num_classes is None:
+        num_classes = np.max(labels) + 1
+    one_hot = np.zeros((labels.size, num_classes))
+    one_hot[np.arange(labels.size), labels] = 1
+    return one_hot

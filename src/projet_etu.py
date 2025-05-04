@@ -334,10 +334,10 @@ if __name__ == "__main__":
     # print("Partie 2")
     # train_binary_classification_linear()
     # train_binary_classification()
-    # train_binary_classification_seq()
+    train_binary_classification_seq()
 
     # print("Partie 4")
-    mnist_classification()
+    # mnist_classification()
 
     # print("Partie 5")
     # train_autoencoder()

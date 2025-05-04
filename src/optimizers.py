@@ -1,4 +1,5 @@
 import numpy as np
+from tqdm import tqdm
 
 class Optim:
     def __init__(self, net, loss, eps):
@@ -17,7 +18,7 @@ class Optim:
 
     def SGD(self, data_x, data_y, batch_size, num_iterations):
         losses = []
-        for _ in range(num_iterations):
+        for _ in tqdm(range(num_iterations)):
             indices = np.random.permutation(len(data_x))
             for i in range(0, len(data_x), batch_size):
                 batch_indices = indices[i:i+batch_size]
