@@ -114,22 +114,21 @@ class Sequential:
                     module._gradient_bias = state_dict[module]['_gradient_bias']
 
 class AutoEncoder:
-    def __init__(self, encoder, decoder, loss_fn):
+    def __init__(self, encoder, decoder):
         self.encoder = encoder
         self.decoder = decoder
-        self.loss_fn = loss_fn
 
     def forward(self, x):
         z = self.encoder.forward(x)
         x_hat = self.decoder.forward(z)
         return x_hat
 
-    def backward(self, x, x_hat):
-        loss = self.loss_fn.forward(x, x_hat)
-        dloss = self.loss_fn.backward(x, x_hat)
-        dz = self.decoder.backward(dloss)
-        self.encoder.backward(dz)
-        return loss
+    def backward(self, delta):
+        delta = self.decoder.backward_delta(self.encoder.inputs[-1], delta)
+        self.decoder.backward_update_gradient(self.encoder.inputs[-1], delta)
+        delta = self.encoder.backward_delta(self.encoder.inputs[-2], delta)
+        self.encoder.backward_update_gradient(self.encoder.inputs[-2], delta)
+        return delta
 
     def zero_grad(self):
         self.encoder.zero_grad()
