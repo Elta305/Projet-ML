@@ -2,8 +2,8 @@ import numpy as np
 
 class Module(object):
     def __init__(self):
-        self._parameters = np.array([])
-        self._gradient = np.array([])
+        self._parameters = None
+        self._gradient = None
 
     def zero_grad(self):
         pass
@@ -26,20 +26,21 @@ class Linear(Module):
         self._input_dim = input_dim
         self._output_dim = output_dim
         self._has_bias = has_bias
-        self._parameters = np.random.randn(input_dim, output_dim)
-        self._bias = np.random.randn(1, output_dim)
-        self._gradient = np.zeros_like(self._parameters)
-        self._gradient_bias = np.zeros_like(self._bias)
 
-        if not self._has_bias:
-            self._bias = None
-            self._gradient_bias = None
+        std_dev = np.sqrt(2 / self._input_dim)
+        self._parameters = np.random.normal(0, std_dev, (self._input_dim, self._output_dim))
+        self._gradient = np.zeros_like(self._parameters)
+
+        if self._has_bias:
+            self._bias = np.random.normal(0, std_dev, (1, self._output_dim))
+            self._gradient_bias = np.zeros_like(self._bias)
 
     def forward(self, X):
         assert X.shape[1] == self._input_dim, "Input dimensions must match weight dimensions"
+        self.output = X @ self._parameters
         if self._has_bias:
-            return X @ self._parameters + self._bias
-        return X @ self._parameters
+            return self.output + self._bias
+        return self.output
     
     def zero_grad(self):
         self._gradient.fill(0)
@@ -80,6 +81,7 @@ class Sequential:
         for i, module in enumerate(reversed(self.modules)):
             module.backward_update_gradient(self.inputs[i+1], delta)
             delta = module.backward_delta(self.inputs[i+1], delta)
+        return delta
     
     def update_parameters(self, learning_rate=1e-3):
         for module in self.modules:
@@ -88,3 +90,53 @@ class Sequential:
     def zero_grad(self):
         for module in self.modules:
             module.zero_grad()
+
+    def state_dict(self):
+        state = {}
+        for module in self.modules:
+            if isinstance(module, Linear):
+                state[module] = {
+                    '_parameters': module._parameters.copy(),
+                    '_gradient': module._gradient.copy()
+                }
+                if module._has_bias:
+                    state[module]['_bias'] = module._bias.copy()
+                    state[module]['_gradient_bias'] = module._gradient_bias.copy()
+        return state
+
+    def load_state_dict(self, state_dict):
+        for module in self.modules:
+            if isinstance(module, Linear):
+                module._parameters = state_dict[module]['_parameters']
+                module._gradient = state_dict[module]['_gradient']
+                if module._has_bias:
+                    module._bias = state_dict[module]['_bias']
+                    module._gradient_bias = state_dict[module]['_gradient_bias']
+
+class AutoEncoder:
+    def __init__(self, encoder, decoder):
+        self.encoder = encoder
+        self.decoder = decoder
+
+    def forward(self, x):
+        z = self.encoder.forward(x)
+        x_hat = self.decoder.forward(z)
+        return x_hat
+
+    def backward(self, delta):
+        delta = self.decoder.backward_delta(self.encoder.inputs[-1], delta)
+        self.decoder.backward_update_gradient(self.encoder.inputs[-1], delta)
+        delta = self.encoder.backward_delta(self.encoder.inputs[-2], delta)
+        self.encoder.backward_update_gradient(self.encoder.inputs[-2], delta)
+        return delta
+
+    def zero_grad(self):
+        self.encoder.zero_grad()
+        self.decoder.zero_grad()
+
+    def encode(self, x):
+        return self.encoder.forward(x)
+    
+    def update_parameters(self, learning_rate=1e-3):
+        self.encoder.update_parameters(learning_rate)
+        self.decoder.update_parameters(learning_rate)
