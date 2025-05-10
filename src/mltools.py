@@ -86,6 +86,74 @@ def normalize_images(X):
     X = (X - np.min(X)) / (np.max(X) - np.min(X))
     return X
 
+def plot_classification(X_train, y_train, X_test, y_test, predict, iteration, losses, with_batch=False):
+    score_train = (y_train == predict(X_train)).mean()
+    score_test = (y_test == predict(X_test)).mean()
+    print(f"Train accuracy : {score_train}")
+    print(f"Test accuracy : {score_test}")
+
+    fig, axes = plt.subplots(1, 2, figsize=(4, 2))
+
+    plt.sca(axes[0])
+    plot_frontiere(X_train, predict, step=100)
+    plot_data(X_train, y_train.reshape(-1))
+    plt.title("Train")
+
+    plt.sca(axes[1])
+    plot_frontiere(X_test, predict, step=100)
+    plot_data(X_test, y_test.reshape(-1))
+    plt.title("Test")
+
+    plt.tight_layout()
+    plt.show()
+
+    if not with_batch:
+        plt.plot(np.arange(iteration), losses)
+        plt.xlabel("Iteration")
+        plt.ylabel("Loss")
+        plt.title("Loss over iteration")
+        plt.show()
+        print(np.array(losses).shape)
+
+def plot_iqm(all_losses, worst_best=True):
+    # all_losses is a list of lists
+    # each inner list contains the losses at each iteration for a specific run
+    # The interquartile mean (IQM) is calculated by taking the mean of the values within the interquartile range (IQR)
+    # In order to get this mean, we need to take the data from every losses list in all_losses and calculate the IQR for each iteration
+    # So the IQM is made for each iteration. The final plot has the length of the longest list in all_losses 
+    # Then we can plot the IQM for each iteration
+    # if worst_best is True, we also plot the worst and best losses based on their last loss
+    # code
+    iqm_losses = []
+
+    for i in range(len(all_losses[0])):
+        iteration_losses = [losses[i] for losses in all_losses]
+        sorted_losses = np.sort(iteration_losses)
+        q1 = np.percentile(sorted_losses, 25)
+        q3 = np.percentile(sorted_losses, 75)
+        iqr_losses = sorted_losses[(sorted_losses >= q1) & (sorted_losses <= q3)]
+        iqm_losses.append(np.mean(iqr_losses))
+
+    plt.plot(iqm_losses, label="IQM")
+
+    if worst_best:
+        final_losses = [losses[-1] for losses in all_losses]
+        worst_idx = np.argmax(final_losses)
+        best_idx = np.argmin(final_losses)
+        plt.plot(all_losses[worst_idx], label="Worst", linestyle="--")
+        plt.plot(all_losses[best_idx], label="Best", linestyle="--")
+
+    q1_values = [np.percentile([losses[i] for losses in all_losses], 25) for i in range(len(all_losses[0]))]
+    q3_values = [np.percentile([losses[i] for losses in all_losses], 75) for i in range(len(all_losses[0]))]
+    plt.fill_between(range(len(all_losses[0])), q1_values, q3_values, color='gray', alpha=0.3, label="IQR")
+
+    plt.xlabel("Iteration")
+    plt.ylabel("Loss")
+    plt.title("Interquartile Mean (IQM) Loss")
+    plt.legend()
+    plt.show()
+
+
 def load_usps(fn):
     with open(fn) as f:
         f.readline()

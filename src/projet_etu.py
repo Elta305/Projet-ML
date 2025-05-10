@@ -59,30 +59,6 @@ def linear_regression():
     plot_loss(losses, num_epochs)
     plot_linear_regression_result(X, Y, Y_pred)
 
-def plot_classification(X_train, y_train, X_test, y_test, predict, iteration, losses, with_batch=False):
-    score_train = (y_train == predict(X_train)).mean()
-    score_test = (y_test == predict(X_test)).mean()
-    print(f"Train accuracy : {score_train}")
-    print(f"Test accuracy : {score_test}")
-
-    plot_frontiere(X_train, predict, step=100)
-    plot_data(X_test, y_test.reshape(-1))
-    plt.title("Train")
-    plt.show()
-
-    plot_frontiere(X_test, predict, step=100)
-    plot_data(X_test, y_test.reshape(-1))
-    plt.title("Test")
-    plt.show()
-
-    if not with_batch:
-        plt.plot(np.arange(iteration), losses)
-        plt.xlabel("Iteration")
-        plt.ylabel("Loss")
-        plt.title("Loss over iteration")
-        plt.show()
-        print(np.array(losses).shape)
-
 def train_binary_classification_linear():
     X_train, y_train = gen_arti(nbex=1000, data_type=0, epsilon=0.5)
     X_test, y_test = gen_arti(nbex=1000, data_type=0, epsilon=0.5)
@@ -184,16 +160,6 @@ def train_binary_classification_seq():
 
     optimizer = Optim(network, loss_fn, learning_rate)
     losses = optimizer.SGD(X_train, y_train, batch_size=64, num_iterations=num_epochs)
-
-    # losses = []
-    # for epoch in range(num_epochs):
-    #     Y_pred = network.forward(X_train)
-    #     loss = loss_fn.forward(y_train, Y_pred).mean()
-    #     losses.append(loss)
-    #     grad_loss = loss_fn.backward(y_train, Y_pred)
-    #     network.backward(grad_loss)
-    #     network.update_parameters(learning_rate)
-    #     network.zero_grad()
 
     def predict(X):
         Y_pred = network.forward(X)
@@ -335,10 +301,10 @@ if __name__ == "__main__":
     # print("Partie 2")
     # train_binary_classification_linear()
     # train_binary_classification()
-    train_binary_classification_seq()
+    # train_binary_classification_seq()
 
     # print("Partie 4")
-    # mnist_classification()
+    mnist_classification()
 
     # print("Partie 5")
     # train_autoencoder()

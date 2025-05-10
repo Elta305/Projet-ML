@@ -22,19 +22,61 @@ class Module:
         pass
 
 class Linear(Module):
-    def __init__(self, input_dim, output_dim, has_bias=True):
+    def __init__(self, input_dim, output_dim, init="he_normal", has_bias=True):
         super().__init__()
         self._input_dim = input_dim
         self._output_dim = output_dim
         self._has_bias = has_bias
+        self._parameters, self._gradient, self._bias, self._gradient_bias = self.init_parameters(input_dim, output_dim, init, has_bias)
 
-        std_dev = np.sqrt(2 / self._input_dim)
-        self._parameters = np.random.normal(0, std_dev, (self._input_dim, self._output_dim))
-        self._gradient = np.zeros_like(self._parameters)
-
-        if self._has_bias:
-            self._bias = np.random.normal(0, std_dev, (1, self._output_dim))
-            self._gradient_bias = np.zeros_like(self._bias)
+    def init_parameters(self, input_dim, output_dim, init, has_bias):
+        if init == "random":
+            parameters = np.random.rand(input_dim, output_dim)
+            gradient = np.zeros_like(parameters)
+            bias = np.random.rand(1, output_dim) if has_bias else None
+            gradient_bias = np.zeros_like(bias) if has_bias else None
+            return parameters, gradient, bias, gradient_bias
+        elif init == "normal":
+            parameters = np.random.randn(input_dim, output_dim)
+            gradient = np.zeros_like(parameters)
+            bias = np.random.randn(1, output_dim) if has_bias else None
+            gradient_bias = np.zeros_like(bias) if has_bias else None
+            return parameters, gradient, bias, gradient_bias
+        elif init == "uniform":
+            limit = np.sqrt(6 / (input_dim + output_dim))
+            parameters = np.random.uniform(-limit, limit, (input_dim, output_dim))
+            gradient = np.zeros_like(parameters)
+            bias = np.random.uniform(-limit, limit, (1, output_dim)) if has_bias else None
+            gradient_bias = np.zeros_like(bias) if has_bias else None
+            return parameters, gradient, bias, gradient_bias
+        elif init == "he_normal":
+            std_dev = np.sqrt(2 / self._input_dim)
+            parameters = np.random.normal(0, std_dev, (input_dim, output_dim))
+            gradient = np.zeros_like(parameters)
+            bias = np.random.normal(0, std_dev, (1, output_dim)) if has_bias else None
+            gradient_bias = np.zeros_like(bias) if has_bias else None
+            return parameters, gradient, bias, gradient_bias
+        elif init == "he_uniform":
+            limit = np.sqrt(6 / (input_dim + output_dim))
+            parameters = np.random.uniform(-limit, limit, (input_dim, output_dim))
+            gradient = np.zeros_like(parameters)
+            bias = np.random.uniform(-limit, limit, (1, output_dim)) if has_bias else None
+            gradient_bias = np.zeros_like(bias) if has_bias else None
+            return parameters, gradient, bias, gradient_bias
+        elif init == "xavier_normal":
+            std_dev = np.sqrt(2 / (input_dim + output_dim))
+            parameters = np.random.normal(0, std_dev, (input_dim, output_dim))
+            gradient = np.zeros_like(parameters)
+            bias = np.random.normal(0, std_dev, (1, output_dim)) if has_bias else None
+            gradient_bias = np.zeros_like(bias) if has_bias else None
+            return parameters, gradient, bias, gradient_bias
+        elif init == "xavier_uniform":
+            limit = np.sqrt(6 / (input_dim + output_dim))
+            parameters = np.random.uniform(-limit, limit, (input_dim, output_dim))
+            gradient = np.zeros_like(parameters)
+            bias = np.random.uniform(-limit, limit, (1, output_dim)) if has_bias else None
+            gradient_bias = np.zeros_like(bias) if has_bias else None
+            return parameters, gradient, bias, gradient_bias
 
     def forward(self, X):
         assert X.shape[1] == self._input_dim, "Input dimensions must match weight dimensions"
