@@ -8,10 +8,7 @@ authors = [
   { name = "Frédéric Li Combeau", email = "frederic.li_combeau@gmail.com" },
 ]
 requires-python = ">=3.13"
-dependencies = [
-    "matplotlib>=3.10.1",
-    "numpy>=2.2.4",
-]
+dependencies = ["matplotlib>=3.10.1", "numpy>=2.2.4", "tqdm>=4.67.1"]
 
 [build-system]
 requires = ["hatchling"]
@@ -20,5 +17,50 @@ build-backend = "hatchling.build"
 [dependency-groups]
 dev = ["pytest>=8.3.5"]
 
+[tool.setuptools]
+packages = ['mlp']
+
+
 [tool.ruff]
+target-version = "py311"
 line-length = 80
+exclude = [".git", ".ruff_cache", "__pypackages__", "dist", "build", "venv"]
+
+
+[tool.ruff.lint]
+select = [
+  "E",   # pycodestyle errors
+  "F",   # pyflakes
+  "W",   # pycodestyle warnings
+  "C90", # mccabe complexity
+  "I",   # isort
+  "N",   # pep8-naming
+  # "D",   # pydocstyle
+  "UP",  # pyupgrade
+  "B",   # flake8-bugbear
+  "A",   # flake8-builtins
+  "C4",  # flake8-comprehensions
+  "T10", # flake8-debugger
+  "EM",  # flake8-errmsg
+  "ICN", # flake8-import-conventions
+  "PT",  # flake8-pytest-style
+  "RET", # flake8-return
+  "SIM", # flake8-simplify
+  "ARG", # flake8-unused-arguments
+  "ERA", # eradicate commented-out code
+  "PL",  # pylint
+  "TRY", # tryceratops
+]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google" # Use Google-style docstrings
+
+[tool.ruff.lint.mccabe]
+max-complexity = 10 # Limit function complexity
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["F401"] # Ignore unused imports in __init__.py files
+"test_*.py" = ["D"]      # Ignore docstring requirements in test files
+
+[tool.ruff.lint.isort]
+known-first-party = ["mlp"]

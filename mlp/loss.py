@@ -1,12 +1,12 @@
-import numpy as np
 import logging
+
+import numpy as np
 
 logger = logging.getLogger(__name__)
 
 
-class Loss(object):
-    """
-    Loss represents a loss function that measures the difference beween
+class Loss:
+    """Loss represents a loss function that measures the difference beween
     predicted values and target values in a neural network.
     """
 
@@ -14,28 +14,24 @@ class Loss(object):
         logger.debug("Intitialized base loss")
 
     def forward(self, targets, predictions):
-        """
-        forward computes the loss value between true labels and predictions.
+        """Forward computes the loss value between true labels and predictions.
 
         * y: true labels/targets
         * yhat: predicted values from the model
         """
-        raise NotImplementedError(
-            "forward method must be implemented by subclasses"
-        )
+        error_msg = "forward method must be implemented by subclasses"
+        raise NotImplementedError(error_msg)
 
     def backward(self, targets, predictions):
-        """
-        backward computes the gradient of the loss with respect to model
+        """Backward computes the gradient of the loss with respect to model
         predictions. This gradient is the starting point for backpropagation
         through the network.
 
         * y: true labels/targets
         * yhat: predicted values from the models
         """
-        raise NotImplementedError(
-            "backward method must be implemented by subclasses"
-        )
+        error_msg = "backward method must be implemented by subclasses"
+        raise NotImplementedError(error_msg)
 
 
 class MSELoss(Loss):
@@ -43,21 +39,22 @@ class MSELoss(Loss):
         super().__init__()
         logger.debug("Initialized MSELoss")
 
-    def forward(self, targets, predictions):
-        assert targets.shape == predictions.shape, (
+    def forward(self, y, yhat):
+        assert y.shape == yhat.shape, (
             "Targets and predictions must have the same shape"
         )
-        batch_size = targets.shape[0]
-        squared_errors = np.sum((targets - predictions) ** 2, axis=1)
-        logger.debug(f"Computed MSE for batch size {batch_size}")
-        return squared_errors
+        batch_size = y.shape[0]
 
-    def backward(self, targets, predictions):
-        assert targets.shape == predictions.shape, (
+        mse = np.linalg.norm(y - yhat) ** 2
+        logger.debug(f"Computed MSE for batch size {batch_size}")
+        return mse
+
+    def backward(self, y, yhat):
+        assert y.shape == yhat.shape, (
             "Targets and predictions must have the same shape"
         )
-        batch_size = targets.shape[0]
-        gradient = -2 * (targets - predictions)
+        batch_size = y.shape[0]
+        gradient = -2 * (y - yhat)
         logger.debug(f"Computed MSE gradient for batch size {batch_size}")
         return gradient
 
@@ -67,9 +64,13 @@ class CrossEntropyLoss(Loss):
         super().__init__()
 
     def forward(self, y, yhat):
-        assert y.shape == yhat.shape, "Shapes of y and yhat must match"
+        assert y.shape == yhat.shape, (
+            "Targets and predictions must have the same shape"
+        )
         return 1 - (yhat * y).sum(axis=1)
 
-    def backward(self, y, yhat):
-        assert y.shape == yhat.shape, "Shapes of y and yhat must match"
-        return yhat - y
+    def backward(self, targets, predictions):
+        assert targets.shape == predictions.shape, (
+            "Targets and predictions must have the same shape"
+        )
+        return predictions - targets

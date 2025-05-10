@@ -1,5 +1,7 @@
-import numpy as np
 import logging
+
+import numpy as np
+
 from .module import Module
 
 logger = logging.getLogger(__name__)
@@ -12,94 +14,101 @@ class Linear(Module):
         self.output_size = output_size
         self.use_bias = use_bias
 
-        weight_scale = np.sqrt(1.0 / input_size)
-        self._parameters = (
-            np.random.randn(input_size, output_size) * weight_scale
+        std_dev = np.sqrt(2.0 / input_size)
+        self.parameters = np.random.normal(
+            0.0, std_dev, (input_size, output_size)
         )
-        self._gradient = np.zeros((input_size, output_size))
+        self.gradient = np.zeros((input_size, output_size))
 
         if self.use_bias:
-            self.bias = np.zeros((1, output_size))
-            self.bias_gradient = np.zeros((1, output_size))
-        else:
-            self.bias = None
-            self.bias_gradient = None
+            self.bias = np.random.normal(0.0, std_dev, (1, self.output_size))
+            self.gradient_bias = np.zeros((1, output_size))
 
         logger.debug(
-            f"Initialized linear layer with input size: {input_size}, output size: {output_size}, bias: {use_bias}"
+            f"Initialized linear layer with "
+            f"input size: {input_size}, "
+            f"output size: {output_size}, "
+            f"bias: {use_bias}"
         )
 
-    def forward(self, input_data):
-        assert input_data.shape[1] == self.input_size, (
-            f"Input dimension mismatch: got {input_data.shape[1]}, expected {self.input_size}"
+    def forward(self, x):
+        assert x.shape[1] == self.input_size, (
+            f"Input dimension mismatch: "
+            f"got {x.shape[1]}, "
+            f"expected {self.input_size}"
         )
-        output = np.dot(input_data, self._parameters)
+
+        output = x @ self.parameters
+
         if self.use_bias:
             output += self.bias
 
         logger.debug(
-            f"Forward pass though linear layer: input shape: {input_data.shape}, output shape: {output.shape}"
+            f"Forward pass though linear layer: "
+            f"input shape: {x.shape}, "
+            f"output shape: {output.shape}"
         )
+
         return output
 
     def zero_grad(self):
-        self._gradient.fill(0.0)
+        self.gradient.fill(0.0)
+
         if self.use_bias:
-            self.bias_gradient.fill(0.0)
+            self.gradient_bias.fill(0.0)
+
         logger.debug("Zeroed gradients in linear layer")
 
-    def backward_update_gradient(self, input_data, delta):
-        assert input_data.shape[1] == self.input_size, (
-            f"Input dimension mismatch in backward: got {input_data.shape[1]}, expected {self.input_size}"
+    def backward_update_gradient(self, x, delta):
+        assert x.shape[1] == self.input_size, (
+            f"Input dimension mismatch in backward: "
+            f"got {x.shape[1]}, "
+            f"expected {self.input_size}"
         )
         assert delta.shape[1] == self.output_size, (
-            f"Delta dimension mismatch: got {delta.shape[1]}, expected {self.output_size}"
+            f"Delta dimension mismatch: "
+            f"got {delta.shape[1]}, "
+            f"expected {self.output_size}"
         )
 
-        weight_gradient = np.dot(input_data.T, delta)
-        self._gradient += weight_gradient
+        self.gradient += x.T @ delta
 
         if self.use_bias:
-            bias_gradient = np.sum(delta, axis=0, keepdims=True)
-            self.bias_gradient += bias_gradient
+            self.gradient_bias += np.sum(delta, axis=0)
 
         logger.debug(
-            f"Updated gradients in linear layer: input shape {input_data.shape}, delta shape {delta.shape}"
+            f"Updated gradients in linear layer: "
+            f"input shape {x.shape}, "
+            f"delta shape {delta.shape}"
         )
 
-    def backward_delta(self, input_data, delta):
-        assert input_data.shape[1] == self.input_size, (
-            f"Input dimension mismatch in backward_delta: got {input_data.shape[1]}, expected {self.input_size}"
+    def backward_delta(self, x, delta):
+        assert x.shape[1] == self.input_size, (
+            f"Input dimension mismatch in backward_delta: "
+            f"got {x.shape[1]}, "
+            f"expected {self.input_size}"
         )
         assert delta.shape[1] == self.output_size, (
-            f"Delta dimension mismatch: got {delta.shape[1]}, expected {self.output_size}"
+            f"Delta dimension mismatch: "
+            f"got {delta.shape[1]}, "
+            f"expected {self.output_size}"
         )
 
-        input_grad = np.dot(delta, self._parameters.T)
+        input_grad = delta @ self.parameters.T
+
         logger.debug(
-            f"Computed input gradient in Linear layer: delta shape {delta.shape}, result shape {input_grad.shape}"
+            f"Computed input gradient in Linear layer: "
+            f"delta shape {delta.shape}, "
+            f"result shape {input_grad.shape}"
         )
         return input_grad
 
-    def update_parameters(self, learning_rate=1e-3):
-        gradient_clip_value = 1.0
-
-        np.clip(
-            self._gradient,
-            -gradient_clip_value,
-            gradient_clip_value,
-            out=self._gradient,
-        )
-        self._parameters -= learning_rate * self._gradient
+    def update_parameters(self, learning_rate):
+        self.parameters -= learning_rate * self.gradient
 
         if self.use_bias:
-            np.clip(
-                self.bias_gradient,
-                -gradient_clip_value,
-                gradient_clip_value,
-                out=self.bias_gradient,
-            )
-            self.bias -= learning_rate * self.bias_gradient
+            self.bias -= learning_rate * self.gradient_bias
+
         logger.debug(
-            f"Updated parameters in linear layer with learning rate {learning_rate}"
+            f"Updated parameters in linear layer: learning rate {learning_rate}"
         )

@@ -1,20 +1,41 @@
 run:
   @just linear-regression
 
-linear-regression:
-  @uv run scripts/train_linear_regression.py
+benchmark:
+  just benchmark-linear-regression
+  just benchmark-linear-classification
+  just benchmark-non-linear-classification
+  just benchmark-mnist
 
-linear-classification:
-  @uv run scripts/train_linear_classification.py
+visualize:
+  just visualize-linear-regression
+  just visualize-linear-classification
+  just visualize-non-linear-classification
+  just visualize-mnist
 
-non-linear-classification:
-  @uv run scripts/train_non_linear_classification.py
+benchmark-linear-regression:
+  @uv run scripts/benchmark_linear_regression.py
 
-non-linear-mlp-classification:
-  @uv run scripts/train_non_linear_mlp_classification.py
+visualize-linear-regression:
+  @uv run scripts/visualize_linear_regression.py
 
-mnist:
-  @uv run scripts/train_mnist.py
+benchmark-linear-classification:
+  @uv run scripts/benchmark_linear_classification.py
+
+visualize-linear-classification:
+  @uv run scripts/visualize_linear_classification.py
+
+benchmark-non-linear-classification:
+  @uv run scripts/benchmark_non_linear_classification.py
+
+visualize-non-linear-classification:
+  @uv run scripts/visualize_non_linear_classification.py
+
+benchmark-mnist:
+  @uv run scripts/benchmark_mnist.py
+
+visualize-mnist:
+  @uv run scripts/visualize_mnist.py
 
 test:
   @uv run pytest

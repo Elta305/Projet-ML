@@ -1,6 +1,7 @@
 import numpy as np
 
-class Module(object):
+
+class Module:
     def __init__(self):
         self._parameters = None
         self._gradient = None
@@ -41,7 +42,7 @@ class Linear(Module):
         if self._has_bias:
             return self.output + self._bias
         return self.output
-    
+
     def zero_grad(self):
         self._gradient.fill(0)
         if self._has_bias:
@@ -53,7 +54,7 @@ class Linear(Module):
         self._gradient += input.T @ delta
         if self._has_bias:
             self._gradient_bias += np.sum(delta, axis=0)
-    
+
     def backward_delta(self, input, delta):
         assert input.shape[1] == self._input_dim, "Input dimensions must match weight dimensions"
         assert delta.shape[1] == self._output_dim, "Delta dimensions must match weight dimensions"
@@ -68,25 +69,25 @@ class Sequential:
     def __init__(self, *modules):
         self.modules = modules
         self.inputs = []
-    
+
     def forward(self, X):
         self.inputs = [X]
         for module in self.modules:
             X = module.forward(X)
             self.inputs.append(X)
         return X
-    
+
     def backward(self, delta):
         self.inputs.reverse()
         for i, module in enumerate(reversed(self.modules)):
             module.backward_update_gradient(self.inputs[i+1], delta)
             delta = module.backward_delta(self.inputs[i+1], delta)
         return delta
-    
+
     def update_parameters(self, learning_rate=1e-3):
         for module in self.modules:
             module.update_parameters(learning_rate)
-    
+
     def zero_grad(self):
         for module in self.modules:
             module.zero_grad()
@@ -136,7 +137,7 @@ class AutoEncoder:
 
     def encode(self, x):
         return self.encoder.forward(x)
-    
+
     def update_parameters(self, learning_rate=1e-3):
         self.encoder.update_parameters(learning_rate)
         self.decoder.update_parameters(learning_rate)

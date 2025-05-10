@@ -1,9 +1,9 @@
 # We base ourselves on the EfficientNet coefficients in order to have well parameterized networks.
 # alpha^N, beta^N, gamma^N are the coefficients for the number of channels, depth and resolution respectively.
 
-import numpy as np
-from module import *
 from activation_func import *
+from module import *
+
 
 def init_network(input_size, output_size, depth, width, resolution, middle_activation=ReLU, last_activation=Softmax):
     layers = []

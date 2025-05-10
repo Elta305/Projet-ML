@@ -44,16 +44,16 @@ class AdamOptimizer(Optim):
         self.net.backward(delta)
         self.m = [
             self.beta1 * m + (1 - self.beta1) * p
-            for m, p in zip(self.m, self.net._gradient)
+            for m, p in zip(self.m, self.net._gradient, strict=False)
         ]
         self.v = [
             self.beta2 * v + (1 - self.beta2) * p**2
-            for v, p in zip(self.v, self.net._gradient)
+            for v, p in zip(self.v, self.net._gradient, strict=False)
         ]
         m_hat = [m / (1 - self.beta1**self.t) for m in self.m]
         v_hat = [v / (1 - self.beta2**self.t) for v in self.v]
         self.net._parameters = [
             p - self.eps * m / (np.sqrt(v) + 1e-8)
-            for p, m, v in zip(self.net._parameters, m_hat, v_hat)
+            for p, m, v in zip(self.net._parameters, m_hat, v_hat, strict=False)
         ]
         return loss

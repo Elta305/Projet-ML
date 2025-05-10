@@ -77,9 +77,16 @@ These results indicate our implementation correctly applies the gradient descent
 #lorem(50)
 
 #figure(caption: [
-  This figure displays training results from $15$ linear regression trials
-  ($n=15$) with $200$ samples per run ($sigma=200$), learning rate $0.01$
+  This figure displays training results from $100$ linear regression trials
+  ($n=100$) with $200$ samples per run ($sigma=200$), learning rate $0.01$
   ($eta=0.01$), and $1000$ epochs ($cal(E)=1000$). The top plot shows the
   interquartile mean loss and Q1-Q3 range during training, while the bottom
   plots contrast the best and worst performing models from the ensemble.
-], image("./figures/linear-regression.svg")) <fig-1>
+], image("./figures/linear_regression.svg")) <fig-1>
+
+#figure(caption: [
+], image("./figures/linear_classification.svg")) <fig-2>
+
+
+#figure(caption: [
+], image("./figures/non_linear_classification.svg")) <fig-3>

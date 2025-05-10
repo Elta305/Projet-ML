@@ -1,7 +1,7 @@
 import torch
-import torch.nn as nn
-import torch.optim as optim
+from torch import nn, optim
 from torchvision import datasets, transforms
+
 
 class NeuralNetwork(nn.Module):
     def __init__(self):
@@ -10,7 +10,7 @@ class NeuralNetwork(nn.Module):
         self.tanh = nn.Tanh()
         self.linear2 = nn.Linear(hidden_dim, output_dim)
         self.softmax = nn.Softmax(dim=1)
-    
+
     def forward(self, x):
         x = self.linear1(x)
         x = self.tanh(x)
@@ -37,13 +37,13 @@ optimizer = optim.SGD(network.parameters(), lr=lr)
 for epoch in range(epochs):
     for batch_x, batch_y in train_loader:
         batch_x = batch_x.view(-1, 28 * 28)
-        
+
         optimizer.zero_grad()
         y_pred = network(batch_x)
         loss = loss_fn(y_pred, batch_y)
         loss.backward()
         optimizer.step()
-    
+
     print(f"Epoch {epoch+1}, Loss: {loss.item():.4f}")
 
 correct = 0

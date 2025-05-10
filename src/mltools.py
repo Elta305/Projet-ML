@@ -1,12 +1,10 @@
-import numpy as np
 #from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt
-from matplotlib import cm
+import numpy as np
 
 
 def plot_data(data,labels=None):
-    """
-    Affiche des donnees 2D
+    """Affiche des donnees 2D
     :param data: matrice des donnees 2d
     :param labels: vecteur des labels (discrets)
     :return:
@@ -21,7 +19,7 @@ def plot_data(data,labels=None):
         plt.scatter(data[labels==l,0],data[labels==l,1],c=cols[i],marker=marks[i])
 
 def plot_frontiere(data,f,step=20):
-    """ Trace un graphe de la frontiere de decision de f
+    """Trace un graphe de la frontiere de decision de f
     :param data: donnees
     :param f: fonction de decision
     :param step: pas de la grille
@@ -31,7 +29,7 @@ def plot_frontiere(data,f,step=20):
     plt.contourf(x,y,f(grid).reshape(x.shape),colors=('gray','blue'),levels=[-1,0,1])
 
 def make_grid(data=None,xmin=-5,xmax=5,ymin=-5,ymax=5,step=20):
-    """ Cree une grille sous forme de matrice 2d de la liste des points
+    """Cree une grille sous forme de matrice 2d de la liste des points
     :param data: pour calcluler les bornes du graphe
     :param xmin: si pas data, alors bornes du graphe
     :param xmax:
@@ -47,14 +45,14 @@ def make_grid(data=None,xmin=-5,xmax=5,ymin=-5,ymax=5,step=20):
     return grid, x, y
 
 def gen_arti(centerx=1,centery=1,sigma=0.1,nbex=1000,data_type=0,epsilon=0.02):
-    """ Generateur de donnees,
-        :param centerx: centre des gaussiennes
-        :param centery:
-        :param sigma: des gaussiennes
-        :param nbex: nombre d'exemples
-        :param data_type: 0: melange 2 gaussiennes, 1: melange 4 gaussiennes, 2:echequier
-        :param epsilon: bruit dans les donnees
-        :return: data matrice 2d des donnnes,y etiquette des donnnees
+    """Generateur de donnees,
+    :param centerx: centre des gaussiennes
+    :param centery:
+    :param sigma: des gaussiennes
+    :param nbex: nombre d'exemples
+    :param data_type: 0: melange 2 gaussiennes, 1: melange 4 gaussiennes, 2:echequier
+    :param epsilon: bruit dans les donnees
+    :return: data matrice 2d des donnnes,y etiquette des donnnees
     """
     if data_type==0:
          #melange de 2 gaussiennes
@@ -78,7 +76,7 @@ def gen_arti(centerx=1,centery=1,sigma=0.1,nbex=1000,data_type=0,epsilon=0.02):
     data[:,0]+=np.random.normal(0,epsilon,nbex)
     data[:,1]+=np.random.normal(0,epsilon,nbex)
     # on mélange les données
-    idx = np.random.permutation((range(y.size)))
+    idx = np.random.permutation(range(y.size))
     data=data[idx,:]
     y=y[idx]
     return data,y.reshape(-1, 1)
@@ -89,7 +87,7 @@ def normalize_images(X):
     return X
 
 def load_usps(fn):
-    with open(fn,"r") as f:
+    with open(fn) as f:
         f.readline()
         data = [[float(x) for x in l.split()] for l in f if len(l.split())>2]
     tmp = np.array(data)
@@ -100,7 +98,7 @@ def get_usps(l,datax,datay):
         resx = datax[datay==l,:]
         resy = datay[datay==l]
         return resx,resy
-    tmp =   list(zip(*[get_usps(i,datax,datay) for i in l]))
+    tmp =   list(zip(*[get_usps(i,datax,datay) for i in l], strict=False))
     tmpx,tmpy = np.vstack(tmp[0]),np.hstack(tmp[1])
     return tmpx,tmpy
 

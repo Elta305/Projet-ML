@@ -1,14 +1,15 @@
+import matplotlib.pyplot as plt
 import numpy as np
 import torch
+from sklearn.cluster import KMeans
 from torchvision import datasets, transforms
-import matplotlib.pyplot as plt
-from loss import *
+
 from activation_func import *
+from loss import *
+from mltools import *
 from module import *
 from optimizers import *
-from mltools import *
-from sklearn.cluster import KMeans
-from sklearn.manifold import TSNE
+
 
 def plot_loss(losses, num_epochs, title='Training Loss over Epochs'):
     plt.figure(figsize=(10, 5))
@@ -110,7 +111,7 @@ def train_binary_classification_linear():
     def predict(X):
         Y_pred = layer.forward(X)
         return np.where(Y_pred >= 0.5, 1, 0)
-    
+
     plot_classification(X_train, y_train, X_test, y_test, predict, num_epochs, losses)
 
 def train_binary_classification():
@@ -138,7 +139,7 @@ def train_binary_classification():
         Y_pred = activation2.forward(hidden2)
         loss = loss_fn.forward(y_train, Y_pred).mean()
         losses.append(loss)
-        
+
         grad_loss = loss_fn.backward(y_train, Y_pred)
         grad_hidden2 = activation2.backward_delta(hidden2, grad_loss)
         grad_activated1 = layer2.backward_delta(activated1, grad_hidden2)
@@ -152,14 +153,14 @@ def train_binary_classification():
 
         layer2.zero_grad()
         layer1.zero_grad()
-    
+
     def predict(X):
         hidden1 = layer1.forward(X)
         activated1 = activation1.forward(hidden1)
         hidden2 = layer2.forward(activated1)
         Y_pred = activation2.forward(hidden2)
         return np.where(Y_pred >= 0.5, 1, 0)
-    
+
     plot_classification(X_train, y_train, X_test, y_test, predict, num_epochs, losses)
 
 def train_binary_classification_seq():
@@ -197,7 +198,7 @@ def train_binary_classification_seq():
     def predict(X):
         Y_pred = network.forward(X)
         return np.where(Y_pred >= 0.5, 1, 0)
-    
+
     plot_classification(X_train, y_train, X_test, y_test, predict, num_epochs, losses, with_batch=True)
     print("Final loss:", losses[-1])
 

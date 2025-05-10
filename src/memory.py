@@ -1,6 +1,7 @@
-import numpy as np
-from collections import deque
 import random
+from collections import deque
+
+import numpy as np
 
 
 class ReplayBuffer:
@@ -8,14 +9,12 @@ class ReplayBuffer:
 
     def __init__(self, max_size):
         """Initialize buffer with maximum capacity."""
-
         # Create a double-ended queue with fixed maximum size. When the buffer is full,
         # adding new items automatically removes the oldest ones.
         self.buffer = deque(maxlen=max_size)
 
     def push(self, state, action, reward, next_state, done):
         """Add a new transition to the replay buffer."""
-
         # Store a complete transition as a tuple containing all information needed
         # for learning: current state, action taken, reward received, next state,
         # and whether the episode ended.
@@ -23,7 +22,6 @@ class ReplayBuffer:
 
     def sample(self, batch_size: int, continuous: bool = False):
         """Randomly sample a batch of transitions for training."""
-
         # Take a random sample of transitions from our buffer to break correlations
         # in sequential data.
         transitions = random.sample(self.buffer, batch_size)
@@ -31,7 +29,7 @@ class ReplayBuffer:
         # Reorganize the batch of transitions into separate arrays for each component.
         # This transforms a list of (state, action, reward, next_state, done) tuples
         # into separate arrays for states, actions, rewards, etc.
-        batch = list(zip(*transitions))
+        batch = list(zip(*transitions, strict=False))
 
         # Convert to numpy arrays with appropriate shapes and types for training.
         states = np.array(batch[0], dtype=np.float32)
@@ -48,7 +46,6 @@ class ReplayBuffer:
 
     def get_latest(self):
         """Retrieve the most recently added transition."""
-
         latest = self.buffer[-1]
 
         state = np.array(latest[0], dtype=np.float32)
