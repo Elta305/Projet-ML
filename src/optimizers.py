@@ -21,11 +21,14 @@ class Optim:
         losses = []
         for _ in tqdm(range(num_iterations)):
             indices = np.random.permutation(len(data_x))
+            loss = []
             for i in range(0, len(data_x), batch_size):
                 batch_indices = indices[i:i+batch_size]
                 batch_x = data_x[batch_indices]
                 batch_y = data_y[batch_indices]
-                losses.append(self.step(batch_x, batch_y))
+                loss.append(self.step(batch_x, batch_y))
+            loss = np.mean(loss)
+            losses.append(loss)
         return losses
 
 class AdamOptimizer(Optim):
