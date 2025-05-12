@@ -54,7 +54,7 @@ class Module:
         error_msg = "backward_delta method must be implemented by subclasses"
         raise NotImplementedError(error_msg)
 
-    def update_parameters(self, learning_rate=1e-3):
+    def update_parameters(self, learning_rate):
         """update_parameters adjusts the module's parameters using the
         accumulated gradient and specific learning rate. This method implements
         the gradient descent update step.

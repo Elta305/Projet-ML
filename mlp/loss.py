@@ -45,8 +45,9 @@ class MSELoss(Loss):
         )
         batch_size = y.shape[0]
 
-        mse = np.linalg.norm(y - yhat) ** 2
+        mse = np.mean(np.square(y - yhat))
         logger.debug(f"Computed MSE for batch size {batch_size}")
+
         return mse
 
     def backward(self, y, yhat):

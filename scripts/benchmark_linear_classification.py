@@ -21,7 +21,7 @@ def generate_classification_data(
     for i in range(n_classes):
         centers[i] = centers[i] * separation
 
-    X = np.zeros((n_samples, n_features))
+    x = np.zeros((n_samples, n_features))
     y = np.zeros((n_samples, 1))
 
     samples_per_class = n_samples // n_classes
@@ -32,63 +32,99 @@ def generate_classification_data(
         )
 
         class_samples = end_idx - start_idx
-        X[start_idx:end_idx] = centers[i] + np.random.randn(
+        x[start_idx:end_idx] = centers[i] + np.random.randn(
             class_samples, n_features
         )
         y[start_idx:end_idx] = i
 
     indices = np.random.permutation(n_samples)
-    X = X[indices]
+    x = x[indices]
     y = y[indices]
 
-    if n_classes == 2:
-        y = 2 * y - 1
+    y = 2 * y - 1
 
-    return X, y, centers
+    return x, y, centers
 
 
-def train_sigmoid_model(X, y, learning_rate=0.01, n_epochs=500):
+def get_batches(x, y, batch_size):
+    n_samples = x.shape[0]
+    indices = np.random.permutation(n_samples)
+
+    x_shuffled = x[indices]
+    y_shuffled = y[indices]
+
+    n_batches = int(np.ceil(n_samples / batch_size))
+    batches = []
+
+    for i in range(n_batches):
+        start_idx = i * batch_size
+        end_idx = min((i + 1) * batch_size, n_samples)
+
+        batch_x = x_shuffled[start_idx:end_idx]
+        batch_y = y_shuffled[start_idx:end_idx]
+
+        batches.append((batch_x, batch_y))
+
+    return batches
+
+
+def train_sigmoid_model(x, y, batch_size=32, learning_rate=0.01, n_epochs=500):
     """Train a perceptron with sigmoid activation for classification."""
-    input_dim = X.shape[1]
+    input_dim = x.shape[1]
     output_dim = y.shape[1]
+
     linear_layer = Linear(input_dim, output_dim)
     sigmoid = Sigmoid()
+
     loss_fn = MSELoss()
+
     losses = []
     accuracies = []
 
-    for epoch in range(n_epochs):
-        linear_output = linear_layer.forward(X)
-        y_pred = sigmoid.forward(linear_output)
+    for _ in range(n_epochs):
+        epoch_losses = []
+        epoch_accuracies = []
 
-        y_pred_scaled = 2 * y_pred - 1
+        batches = get_batches(x, y, batch_size)
 
-        loss_values = loss_fn.forward(y, y_pred_scaled)
-        avg_loss = np.mean(loss_values)
-        losses.append(avg_loss)
+        for batch_x, batch_y in batches:
+            linear_output = linear_layer.forward(batch_x)
+            output = sigmoid.forward(linear_output)
+            prediction = 2 * output - 1
 
-        predictions = np.sign(y_pred_scaled)
-        accuracy = np.mean(predictions == y)
-        accuracies.append(accuracy)
+            loss_values = loss_fn.forward(batch_y, prediction)
+            batch_loss = np.mean(loss_values)
+            epoch_losses.append(batch_loss)
 
-        grad = loss_fn.backward(y, y_pred_scaled)
-        grad_sigmoid = grad * 2
-        delta = sigmoid.backward_delta(linear_output, grad_sigmoid)
-        linear_layer.zero_grad()
-        linear_layer.backward_update_gradient(X, delta)
-        linear_layer.update_parameters(learning_rate)
+            predictions = np.sign(prediction)
+            batch_accuracy = np.mean(predictions == batch_y)
+            epoch_accuracies.append(batch_accuracy)
+
+            grad = loss_fn.backward(batch_y, prediction)
+            grad_scaled = 2 * grad
+
+            delta = sigmoid.backward_delta(linear_output, grad_scaled)
+            linear_layer.zero_grad()
+            linear_layer.backward_update_gradient(batch_x, delta)
+            linear_layer.update_parameters(learning_rate)
+
+        avg_epoch_loss = np.mean(epoch_losses)
+        avg_epoch_accuracy = np.mean(epoch_accuracies)
+        losses.append(avg_epoch_loss)
+        accuracies.append(avg_epoch_accuracy)
 
     return (linear_layer, sigmoid), losses, accuracies
 
 
 def main():
-    n_runs = 100
+    n_runs = 25
     n_samples = 400
     n_features = 2
     n_classes = 2
-    separation = 1.2
+    separation = 2
     learning_rate = 0.01
-    n_epochs = 1000
+    n_epochs = 256
+    batch_size = 32
     random_seed = 42
 
     np.random.seed(random_seed)
@@ -102,7 +138,7 @@ def main():
     all_centers = []
 
     for run in tqdm(range(n_runs), desc="Running classification trials"):
-        X, y, centers = generate_classification_data(
+        x, y, centers = generate_classification_data(
             n_samples=n_samples,
             n_features=n_features,
             n_classes=n_classes,
@@ -113,14 +149,18 @@ def main():
         all_centers.append(centers.tolist())
 
         model, losses, accuracies = train_sigmoid_model(
-            X, y, learning_rate=learning_rate, n_epochs=n_epochs
+            x,
+            y,
+            batch_size=batch_size,
+            learning_rate=learning_rate,
+            n_epochs=n_epochs,
         )
 
         all_losses.append(losses)
         all_accuracies.append(accuracies)
 
         linear_layer, _ = model
-        weights = linear_layer._parameters.copy()
+        weights = linear_layer.parameters.copy()
         bias = linear_layer.bias.copy()
 
         all_weights.append(weights.tolist())

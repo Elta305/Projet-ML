@@ -53,11 +53,13 @@ def main():
     q3_accs = np.array([stats["q3"] for stats in acc_stats])
 
     final_accs = all_accuracies[:, -1]
+    iqm_value = np.mean(np.percentile(final_accs, [25, 75]))
+    q1_value = np.percentile(final_accs, 25)
 
-    median_value = np.median(final_accs)
-    median_idx = np.argmin(np.abs(final_accs - median_value))
-
-    worst_idx = np.argmin(final_accs)
+    iqm_idx = np.argmin(np.abs(final_accs - iqm_value))
+    final_accs_masked = np.delete(final_accs, iqm_idx)
+    indices = np.delete(np.arange(len(final_accs)), iqm_idx)
+    q1_idx = indices[np.argmin(np.abs(final_accs_masked - q1_value))]
 
     plt.rcParams.update(
         {
@@ -129,7 +131,7 @@ def main():
         n_classes = centers.shape[0]
         n_samples = params["n_samples"]
 
-        X = np.zeros((n_samples, n_features))
+        x = np.zeros((n_samples, n_features))
         y = np.zeros((n_samples, 1))
 
         samples_per_class = n_samples // n_classes
@@ -142,22 +144,21 @@ def main():
             )
 
             class_samples = end_idx - start_idx
-            X[start_idx:end_idx] = centers[i] + np.random.randn(
+            x[start_idx:end_idx] = centers[i] + np.random.randn(
                 class_samples, n_features
             )
             y[start_idx:end_idx] = i
 
         indices = np.random.permutation(n_samples)
-        X = X[indices]
+        x = x[indices]
         y = y[indices]
 
-        if n_classes == 2:
-            y = 2 * y - 1
+        y = 2 * y - 1
 
-        return X, y
+        return x, y
 
-    X_median, y_median = generate_synthetic_data(median_idx)
-    X_worst, y_worst = generate_synthetic_data(worst_idx)
+    x_median, y_median = generate_synthetic_data(iqm_idx)
+    x_worst, y_worst = generate_synthetic_data(q1_idx)
 
     def plot_decision_boundary(ax, X, y, weights, bias):
         w = np.array(weights).flatten()
@@ -169,11 +170,11 @@ def main():
             np.linspace(x_min, x_max, 100), np.linspace(y_min, y_max, 100)
         )
 
-        Z = np.dot(np.c_[xx.ravel(), yy.ravel()], w) + b
-        Z = Z.reshape(xx.shape)
+        z = np.dot(np.c_[xx.ravel(), yy.ravel()], w) + b
+        z = z.reshape(xx.shape)
 
         ax.contour(
-            xx, yy, Z, levels=[0], colors="black", linestyles="--", linewidths=2
+            xx, yy, z, levels=[0], colors="black", linestyles="--", linewidths=2
         )
 
         y_pred = np.sign(np.dot(X, w) + b)
@@ -219,7 +220,7 @@ def main():
 
     ax3 = fig.add_subplot(gs[2, 0])
     plot_decision_boundary(
-        ax3, X_median, y_median, all_weights[median_idx], all_biases[median_idx]
+        ax3, x_median, y_median, all_weights[iqm_idx], all_biases[iqm_idx]
     )
     ax3.set_xlabel(r"$x_1$")
     ax3.set_ylabel(r"$x_2$")
@@ -227,7 +228,7 @@ def main():
 
     ax4 = fig.add_subplot(gs[2, 1])
     plot_decision_boundary(
-        ax4, X_worst, y_worst, all_weights[worst_idx], all_biases[worst_idx]
+        ax4, x_worst, y_worst, all_weights[q1_idx], all_biases[q1_idx]
     )
     ax4.set_xlabel(r"$x_1$")
     ax4.set_ylabel(r"$x_2$")
