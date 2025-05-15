@@ -3,7 +3,15 @@ import struct
 import urllib.request
 from pathlib import Path
 
+import matplotlib.pyplot as plt
 import numpy as np
+from tqdm import tqdm
+
+from mlp.activation import ReLU, Sigmoid, Softmax
+from mlp.linear import Linear
+from mlp.loss import CrossEntropyLoss
+from mlp.sequential import Sequential
+from mlp.utils import one_hot_encoding
 
 
 def compute_stats(values: list[float]) -> dict[str, float]:
@@ -215,3 +223,199 @@ def get_mnist():
         raise
     else:
         return x_train, y_train, x_val, y_val, x_test, y_test
+
+
+def train_mnist_classifier(
+    x_train,
+    y_train,
+    x_val,
+    y_val,
+    optim,
+    activation,
+    batch_size,
+    hidden_dims,
+    learning_rate,
+    max_epochs,
+    seed,
+    patience,
+):
+    np.random.seed(seed)
+
+    num_classes = 10
+    y_train_onehot = one_hot_encoding(y_train, num_classes)
+
+    input_dim = x_train.shape[1]
+    output_dim = num_classes
+
+    layers = []
+    prev_dim = input_dim
+    for hidden_dim in hidden_dims:
+        layers.append(Linear(prev_dim, hidden_dim))
+        layers.append(activation())
+        prev_dim = hidden_dim
+    layers.append(Linear(prev_dim, output_dim))
+    layers.append(Softmax())
+
+    model = Sequential(*layers)
+
+    loss_fn = CrossEntropyLoss()
+
+    optimizer = optim(model, loss_fn, eps=learning_rate)
+
+    best_val_accuracy = 0
+
+    for _ in tqdm(range(max_epochs), leave=False):
+        batches = get_batches(x_train, y_train_onehot, batch_size)
+        for batch_x, batch_y in batches:
+            optimizer.step(batch_x, batch_y)
+
+        val_output = model.forward(x_val)
+        val_predictions = np.argmax(val_output, axis=1)
+        val_accuracy = np.mean(val_predictions == y_val)
+
+        if val_accuracy > best_val_accuracy:
+            best_val_accuracy = val_accuracy
+            best_model_state = model.state_dict()
+            patience_counter = 0
+        else:
+            patience_counter += 1
+
+        if patience_counter >= patience:
+            break
+
+    model.load_state_dict(best_model_state)
+
+    return model
+
+
+def evaluate_model_mnist(model, x_test, y_test):
+    val_output = model.forward(x_test)
+    val_predictions = np.argmax(val_output, axis=1)
+    return np.mean(val_predictions == y_test)
+
+
+def simple_whisker_plot(stats_dict, colors_list, save_file):
+    plt.rcParams.update(
+        {
+            "text.usetex": True,
+            "font.family": "serif",
+            "font.serif": ["Computer Modern Roman"],
+            "axes.labelsize": 20,
+            "font.size": 20,
+            "legend.fontsize": 16,
+            "xtick.labelsize": 16,
+            "ytick.labelsize": 16,
+        }
+    )
+
+    plt.figure(figsize=(6, 6))
+
+    algo_names = list(stats_dict.keys())
+    positions = np.arange(len(algo_names))
+
+    for i, algo in enumerate(algo_names):
+        q1 = stats_dict[algo]["q1"]
+        iqm = stats_dict[algo]["iqm"]
+        q3 = stats_dict[algo]["q3"]
+        min_val = stats_dict[algo]["min"]
+        max_val = stats_dict[algo]["max"]
+
+        color = colors_list[i]
+
+        box_width = 0.15
+        whisker_width = 0.08
+
+        plt.gca().add_patch(
+            plt.Rectangle(
+                (i - box_width / 2, q1),
+                box_width,
+                q3 - q1,
+                color=color,
+                alpha=0.2,
+            )
+        )
+
+        plt.plot(
+            [i - box_width / 2, i + box_width / 2],
+            [q1, q1],
+            color=color,
+            linewidth=2,
+        )
+        plt.plot(
+            [i - box_width / 2, i + box_width / 2],
+            [q3, q3],
+            color=color,
+            linewidth=2,
+        )
+
+        plt.plot(
+            [i, i],
+            [min_val, q1],
+            color=color,
+            linewidth=1.5,
+        )
+        plt.plot(
+            [i, i],
+            [q3, max_val],
+            color=color,
+            linewidth=1.5,
+        )
+
+        plt.plot(
+            [i - whisker_width / 2, i + whisker_width / 2],
+            [min_val, min_val],
+            color=color,
+            linewidth=1.5,
+        )
+        plt.plot(
+            [i - whisker_width / 2, i + whisker_width / 2],
+            [max_val, max_val],
+            color=color,
+            linewidth=1.5,
+        )
+
+        plt.plot(
+            i,
+            iqm,
+            "o",
+            markersize=8,
+            markeredgecolor=color,
+            markerfacecolor=color,
+        )
+        plt.plot(
+            [i - box_width / 2, i + box_width / 2],
+            [iqm, iqm],
+            color=color,
+            linewidth=1,
+        )
+
+    plt.xticks(positions, algo_names, rotation=45, ha="right")
+    plt.ylabel("Accuracy")
+    plt.grid(True, axis="y", alpha=0.3)
+
+    plt.savefig(save_file, bbox_inches="tight", pad_inches=0, dpi=300)
+
+
+def create_autoencoder(input_dim, latent_dim, depth):
+    dims = []
+    for i in range(depth):
+        dim = int(
+            input_dim
+            * ((latent_dim / input_dim) ** (np.log(i + 2) / np.log(depth + 2)))
+        )
+        dims.append(dim)
+
+    reversed_dims = list(reversed(dims))
+
+    autoencoder_dims = (
+        [input_dim] + dims + [latent_dim] + reversed_dims + [input_dim]
+    )
+
+    layers = []
+    for i in range(len(autoencoder_dims) - 1):
+        layers.append(Linear(autoencoder_dims[i], autoencoder_dims[i + 1]))
+        if i < len(autoencoder_dims) - 1:
+            layers.append(ReLU())
+    layers.append(Sigmoid())
+
+    return Sequential(*layers)

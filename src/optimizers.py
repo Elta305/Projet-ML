@@ -1,6 +1,8 @@
 import numpy as np
 from tqdm import tqdm
+
 from module import *
+
 
 class Optim:
     def __init__(self, net, loss, eps):
@@ -63,12 +65,12 @@ class AdamOptimizer:
             self.momentums[module]['parameters'] = self.beta_1 * self.momentums[module]['parameters'] + (1 - self.beta_1) * module._gradient
             if module._has_bias:
                 self.momentums[module]['bias'] = self.beta_1 * self.momentums[module]['bias'] + (1 - self.beta_1) * module._gradient_bias
-            
+
             corrected_momentums_parameters = self.momentums[module]['parameters'] / (1 - self.beta_1 ** (self.iterations + 1))
             corrected_momentums_bias = None
             if module._has_bias:
                 corrected_momentums_bias = self.momentums[module]['bias'] / (1 - self.beta_1 ** (self.iterations + 1))
-            
+
             self.caches[module]['parameters'] = self.beta_2 * self.caches[module]['parameters'] + (1 - self.beta_2) * (module._gradient ** 2)
             if module._has_bias:
                 self.caches[module]['bias'] = self.beta_2 * self.caches[module]['bias'] + (1 - self.beta_2) * (module._gradient_bias ** 2)

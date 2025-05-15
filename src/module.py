@@ -120,7 +120,7 @@ class Sequential:
                 if module._has_bias:
                     parameters.append(module._bias)
         return parameters
-    
+
     def get_gradient(self):
         gradients = []
         for module in self.modules:

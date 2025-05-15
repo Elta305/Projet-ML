@@ -1,5 +1,5 @@
 run:
-  @just linear-regression
+  @just benchmark-autoencoder-matrix
 
 benchmark:
   just benchmark-linear-regression
@@ -66,6 +66,12 @@ benchmark-hidden-size:
 
 visualize-hidden-size:
   @uv run scripts/visualize_hidden_size.py
+
+benchmark-autoencoder-matrix:
+  @uv run scripts/benchmark_autoencoder_matrix.py
+
+visualize-autoencoder-matrix:
+  @uv run scripts/visualize_autoencoder_matrix.py
 
 test:
   @uv run pytest
