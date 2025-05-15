@@ -83,15 +83,27 @@ These results indicate our implementation correctly applies the gradient descent
 
 == Linear and non-linear classification
 
-Neural networks can also be used for classification tasks. We can adapt our linear regression model to classify data points into $k$ classes. The output layer is a softmax layer, which normalizes the output to a probability distribution over the classes. The loss function is categorical cross-entropy, defined as:
-$
-cal(L) (y, hat(y)) = -1/n sum_(i=0)^n sum_(j=0)^k y_i j log(hat(y)_j)
-$
+Neural networks can also be used for classification tasks. We can adapt our linear regression model to classify data points into $k$ classes. The output layer is a softmax layer, which normalizes the output to a probability distribution over the classes. The softmax activation and cross-entropy loss are often used together in classification tasks because they form a mathematically convenient and numerically stable pair.
 
-where $y_i j$ is $1$ if the $i$-th example belongs to class $j$, and $0$ otherwise. The gradient of the loss with respect to the output is:
+Softmax turns logits into probabilities
+Given raw outputs $z in RR^k$, softmax maps them to a probability distribution:
 $
-gradient_bold(hat(y)) cal(L) = hat(y) - y
+"softmax"(z)_i = e^{z_i} / (sum_{j=1}^k e^{z_j})
 $
+This ensures the outputs are in $[0, 1]$ and sum to $1$, thus interpretable as class probabilities.
+
+Cross-entropy measures the distance between predicted and true distributions. For a one-hot encoded true label $y$, and predicted probability $hat(y) = "softmax"(z)$, the loss is:
+$
+cal(L)(y, hat(y)) = - sum_{i=1}^k y_i log(hat(y)_i)
+$
+Since $y$ is one-hot, only the log probability of the correct class is penalized.
+
+Also, the gradient simplifies nicely as the derivative of the loss with respect to the input logits $z$ is:
+$
+(partial cal(L)) / (partial z) = hat(y) - y
+$
+This is much simpler than computing the gradient of softmax and cross-entropy separately. It reduces computation and avoids numerical instability.
+
 The training process is similar to linear regression, but we use the softmax layer and categorical cross-entropy loss. The algorithm is as follows:
 #algorithm(
   title: [Gradient descent for classification],
@@ -113,7 +125,7 @@ The training process is similar to linear regression, but we use the softmax lay
 
 @fig-2 shows the results of our linear classification task. The model is trained on a dataset where the classes are linearly separable. The top plot displays the evolution of the loss during training, which decreases rapidly in the first epochs and then plateaus, indicating fast convergence. The interquartile mean and Q1-Q3 range show that most runs achieve similar performance, with low variance. The bottom plots illustrate the decision boundaries learned by the median and worst models. Both models successfully separate the two classes. The worst model still captures the general structure, but with a less optimal orientation, highlighting the effect of initialization and data variability.
 
-@fig-3 presents the results of our non-linear classification task, specifically on the XOR problem, which is not linearly separable. Here, the model includes a non-linear activation function, enabling it to learn the complex decision boundary required to separate the classes. The loss curve in the top plot decreases more slowly than in the linear case, reflecting the increased difficulty of the task, but still shows fast improvement. The bottom plots show the decision boundaries for the median and worst models. The median model successfully learns the non-linear structure of the XOR problem, while the worst model demonstrates some misclassification and less understanding of the problem as some parts at the right of the plot are classified as a part of the red dots. Overall, these results confirm that our implementation can handle both linear and non-linear classification problems effectively.
+@fig-3 presents the results of our non-linear classification task, specifically on the XOR problem, which is not linearly separable: no single line can divide the true and false outputs in input space. This necessitates the use of a non-linear model with hidden layers to capture the disjoint decision regions. Here, the model includes a non-linear activation function, enabling it to learn the complex decision boundary required to separate the classes. The loss curve in the top plot decreases more slowly than in the linear case, reflecting the increased difficulty of the task, but still shows fast improvement. The bottom plots show the decision boundaries for the median and worst models. The median model successfully learns the non-linear structure of the XOR problem, while the worst model demonstrates some misclassification and less understanding of the problem as some parts at the right of the plot are classified as a part of the red dots. Overall, these results confirm that our implementation can handle both linear and non-linear classification problems effectively.
 
 #figure(caption: [
   This figure displays training results from $100$ linear classification trials
