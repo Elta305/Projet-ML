@@ -112,6 +112,24 @@ class Sequential:
         self.modules = modules
         self.inputs = []
 
+    def get_parameters(self):
+        parameters = []
+        for module in self.modules:
+            if isinstance(module, Linear):
+                parameters.append(module._parameters)
+                if module._has_bias:
+                    parameters.append(module._bias)
+        return parameters
+    
+    def get_gradient(self):
+        gradients = []
+        for module in self.modules:
+            if isinstance(module, Linear):
+                gradients.append(module._gradient)
+                if module._has_bias:
+                    gradients.append(module._gradient_bias)
+        return gradients
+
     def forward(self, X):
         self.inputs = [X]
         for module in self.modules:
@@ -136,25 +154,25 @@ class Sequential:
 
     def state_dict(self):
         state = {}
-        for module in self.modules:
+        for idx, module in enumerate(self.modules):
             if isinstance(module, Linear):
-                state[module] = {
+                state[idx] = {
                     '_parameters': module._parameters.copy(),
                     '_gradient': module._gradient.copy()
                 }
                 if module._has_bias:
-                    state[module]['_bias'] = module._bias.copy()
-                    state[module]['_gradient_bias'] = module._gradient_bias.copy()
+                    state[idx]['_bias'] = module._bias.copy()
+                    state[idx]['_gradient_bias'] = module._gradient_bias.copy()
         return state
 
     def load_state_dict(self, state_dict):
-        for module in self.modules:
+        for idx, module in enumerate(self.modules):
             if isinstance(module, Linear):
-                module._parameters = state_dict[module]['_parameters']
-                module._gradient = state_dict[module]['_gradient']
+                module._parameters = state_dict[idx]['_parameters']
+                module._gradient = state_dict[idx]['_gradient']
                 if module._has_bias:
-                    module._bias = state_dict[module]['_bias']
-                    module._gradient_bias = state_dict[module]['_gradient_bias']
+                    module._bias = state_dict[idx]['_bias']
+                    module._gradient_bias = state_dict[idx]['_gradient_bias']
 
 class AutoEncoder:
     def __init__(self, encoder, decoder):
