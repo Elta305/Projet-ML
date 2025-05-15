@@ -145,12 +145,6 @@ def generate_xor_classification_data(
 
 
 def get_mnist():
-    """
-    Load MNIST dataset from local files or download if needed.
-
-    Returns:
-        x_train, y_train, x_val, y_val, x_test, y_test: numpy arrays
-    """
     dataset_dir = Path("datasets")
     dataset_dir.mkdir(exist_ok=True)
 
