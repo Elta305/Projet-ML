@@ -79,6 +79,18 @@ benchmark-autoencoder-denoiser:
 visualize-autoencoder-denoiser:
   @uv run scripts/visualize_autoencoder_denoiser.py
 
+benchmark-initialization:
+  @uv run scripts/benchmark_initialization.py
+
+visualize-initialization:
+  @uv run scripts/visualize_initialization.py
+
+benchmark-hidden-layers_relu:
+  @uv run scripts/benchmark_hidden_layers_relu.py
+
+visualize-hidden-layers_tanh:
+  @uv run scripts/visualize_hidden_layers_tanh.py
+
 test:
   @uv run pytest
 
