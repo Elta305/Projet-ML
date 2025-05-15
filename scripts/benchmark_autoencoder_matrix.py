@@ -1,9 +1,12 @@
-import matplotlib.pyplot as plt
+import pickle
+import threading
+from pathlib import Path
+
 import numpy as np
 from tqdm import tqdm
 from utils import create_autoencoder, get_batches, get_mnist
 
-from mlp.loss import MSELoss
+from mlp.loss import CrossEntropyLoss, MSELoss
 from mlp.optim import Adam
 
 
@@ -54,38 +57,57 @@ def train_autoencoder_mnist(
 
 def evaluate_autoencoder(model, x_test):
     reconstructed = model.forward(x_test)
-
-    # Calculate per-sample reconstruction error
-    errors = np.mean((x_test - reconstructed) ** 2, axis=1)
-
-    # Find indices for worst, median, and best reconstructions
-    worst_idx = np.argmax(errors)
-    median_idx = np.argsort(errors)[len(errors) // 2]
-    best_idx = np.argmin(errors)
-
-    # Plot the original and reconstructed images
-    fig, axs = plt.subplots(3, 2, figsize=(10, 12))
-    titles = ["Worst", "Median", "Best"]
-    indices = [worst_idx, median_idx, best_idx]
-
-    for i, (title, idx) in enumerate(zip(titles, indices, strict=False)):
-        # Plot original image
-        axs[i, 0].imshow(x_test[idx].reshape(28, 28), cmap="gray")
-        axs[i, 0].set_title(f"{title} - Original")
-        axs[i, 0].axis("off")
-
-        # Plot reconstructed image
-        axs[i, 1].imshow(reconstructed[idx].reshape(28, 28), cmap="gray")
-        axs[i, 1].set_title(
-            f"{title} - Reconstructed (Error: {errors[idx]:.4f})"
-        )
-        axs[i, 1].axis("off")
-
-    plt.tight_layout()
-    plt.show()
-
-    # Return the overall loss
     return MSELoss().forward(x_test, reconstructed)
+
+
+def run_experiment(
+    latent_dim,
+    depth,
+    loss_fn,
+    shared_results,
+    lock,
+    run_seeds,
+    x_train,
+    x_val,
+    x_test,
+):
+    loss_name = loss_fn.__class__.__name__
+    key = (latent_dim, depth, loss_name)
+
+    local_results = {
+        "losses": [],
+        "best_loss": float("inf"),
+        "best_model": None,
+    }
+
+    for run in tqdm(
+        range(len(run_seeds)),
+        leave=False,
+        desc=f"latent={latent_dim}, depth={depth}, loss={loss_name}",
+    ):
+        model = train_autoencoder_mnist(
+            x_train=x_train,
+            x_val=x_val,
+            latent_dim=latent_dim,
+            depth=depth,
+            loss_fn=loss_fn,
+            batch_size=128,
+            learning_rate=0.001,
+            max_epochs=200,
+            patience=5,
+            seed=run_seeds[run],
+        )
+        loss = evaluate_autoencoder(model, x_test)
+        local_results["losses"].append(loss)
+
+        if loss < local_results["best_loss"]:
+            local_results["best_loss"] = loss
+            local_results["best_model"] = model.state_dict()
+
+    local_results["avg_loss"] = np.mean(local_results["losses"])
+
+    with lock:
+        shared_results[key] = local_results
 
 
 def main():
@@ -97,25 +119,39 @@ def main():
 
     x_train, y_train, x_val, y_val, x_test, y_test = get_mnist()
 
-    losses = []
-    for run in tqdm(range(n_runs)):
-        model = train_autoencoder_mnist(
-            x_train=x_train,
-            x_val=x_val,
-            latent_dim=32,
-            depth=3,
-            loss_fn=MSELoss(),
-            batch_size=128,
-            learning_rate=0.001,
-            max_epochs=100,
-            patience=5,
-            seed=run_seeds[run],
-        )
+    results = {}
 
-        loss = evaluate_autoencoder(model, x_test)
-        losses.append(loss)
+    threads = []
+    results_lock = threading.Lock()
 
-    print(losses)
+    loss_fns = [MSELoss(), CrossEntropyLoss()]
+
+    for latent_dim in [4, 8, 16, 32, 64]:
+        for depth in [1, 2, 3, 4, 5]:
+            for loss_fn in loss_fns:
+                thread = threading.Thread(
+                    target=run_experiment,
+                    args=(
+                        latent_dim,
+                        depth,
+                        loss_fn,
+                        results,
+                        results_lock,
+                        run_seeds,
+                        x_train,
+                        x_val,
+                        x_test,
+                    ),
+                )
+                threads.append(thread)
+                thread.start()
+
+    for thread in threads:
+        thread.join()
+
+    Path("results").mkdir(exist_ok=True)
+    with open("results/mnist_hidden.pkl", "wb") as f:
+        pickle.dump(results, f)
 
 
 if __name__ == "__main__":
