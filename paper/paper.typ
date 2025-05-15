@@ -68,9 +68,18 @@ The training process iteratively applies gradient descent:
 )
 
 === Results analysis
-@fig-1 shows our linear regression results. The loss curve displays the expected pattern: rapid initial decrease followed by gradual convergence. Within 200 epochs, most improvement occurs, with minimal gains thereafter. The bottom plots contrast the best and worst models. Both capture linear relationships but with different slopes. The data points cluster tightly around both lines, showing both models learned useful patterns performance differences. This variability stems from random initialization and dataset generation.
+
+@fig-1 shows our linear regression results. The loss curve displays the expected pattern: rapid initial decrease followed by gradual convergence. Within 200 epochs, most improvement occurs, with minimal gains thereafter. The bottom plots contrast the median and worst models. Both capture linear relationships but with different slopes. The data points cluster tightly around both lines, showing both models learned useful patterns performance differences. This variability stems from random initialization and dataset generation.
 
 These results indicate our implementation correctly applies the gradient descent algorithm. The smooth convergence indicates proper gradient computation and parameter updates.
+
+#figure(caption: [
+  This figure displays training results from $100$ linear regression trials
+  ($n=100$) with $200$ samples per run ($sigma=200$), learning rate $0.01$
+  ($eta=0.01$), and $1000$ epochs ($cal(E)=1000$). The top plot shows the
+  interquartile mean loss and Q1-Q3 range during training, while the bottom
+  plots contrast the median and worst performing models from the ensemble. To assure statistical significance, we made 15 runs for each experiments.
+], image("./figures/linear_regression.svg")) <fig-1>
 
 == Linear and non-linear classification
 
@@ -102,30 +111,90 @@ The training process is similar to linear regression, but we use the softmax lay
 
 === Results analysis
 
-@fig-2 shows the results of our linear classification task. The model successfully separates the two classes, with a clear decision boundary. The loss curve indicates that the model converges quickly, with most improvement occurring in the first few epochs. The bottom plot shows the best and worst models, which both capture the underlying structure of the data.
-@fig-3 shows the results of our non-linear classification task on the XOR problem. The model successfully separates the two classes, with a clear decision boundary. Although the loss curve converge a little bit slowly, it is still pretty fast, with most improvement occurring in the first few epochs. The bottom plot shows the best and worst models, which both capture the underlying structure of the data.
+@fig-2 shows the results of our linear classification task. The model is trained on a dataset where the classes are linearly separable. The top plot displays the evolution of the loss during training, which decreases rapidly in the first epochs and then plateaus, indicating fast convergence. The interquartile mean and Q1-Q3 range show that most runs achieve similar performance, with low variance. The bottom plots illustrate the decision boundaries learned by the median and worst models. Both models successfully separate the two classes. The worst model still captures the general structure, but with a less optimal orientation, highlighting the effect of initialization and data variability.
 
-#figure(caption: [
-  This figure displays training results from $100$ linear regression trials
-  ($n=100$) with $200$ samples per run ($sigma=200$), learning rate $0.01$
-  ($eta=0.01$), and $1000$ epochs ($cal(E)=1000$). The top plot shows the
-  interquartile mean loss and Q1-Q3 range during training, while the bottom
-  plots contrast the best and worst performing models from the ensemble.
-], image("./figures/linear_regression.svg")) <fig-1>
+@fig-3 presents the results of our non-linear classification task, specifically on the XOR problem, which is not linearly separable. Here, the model includes a non-linear activation function, enabling it to learn the complex decision boundary required to separate the classes. The loss curve in the top plot decreases more slowly than in the linear case, reflecting the increased difficulty of the task, but still shows fast improvement. The bottom plots show the decision boundaries for the median and worst models. The median model successfully learns the non-linear structure of the XOR problem, while the worst model demonstrates some misclassification and less understanding of the problem as some parts at the right of the plot are classified as a part of the red dots. Overall, these results confirm that our implementation can handle both linear and non-linear classification problems effectively.
 
 #figure(caption: [
   This figure displays training results from $100$ linear classification trials
   ($n=100$) with $200$ samples per run ($sigma=200$), learning rate $0.01$
   ($eta=0.01$), and $1000$ epochs ($cal(E)=1000$). The top plot shows the
   interquartile mean loss and Q1-Q3 range during training, while the bottom
-  plots contrast the best and worst performing models from the ensemble.
+  plots contrast the median and worst performing models from the ensemble.
 ], image("./figures/linear_classification.svg")) <fig-2>
-
 
 #figure(caption: [
   This figure displays training results from $100$ non-linear classification
   trials ($n=100$) with $200$ samples per run ($sigma=200$), learning rate
   $0.01$ ($eta=0.01$), and $1000$ epochs ($cal(E)=1000$). The top plot shows
   the interquartile mean loss and Q1-Q3 range during training, while the bottom
-  plots contrast the best and worst performing models from the ensemble.
+  plots contrast the median and worst performing models from the ensemble.
 ], image("./figures/non_linear_classification.svg")) <fig-3>
+
+== MNIST classification
+
+The MNIST dataset is a fundamental benchmark in the field of machine learning and computer vision. It consists of 60,000 training and 10,000 test grayscale images of handwritten digits, each of size $28times 28$ pixels, flattened into vectors of 784 dimensions. The classification task involves assigning each image to one of 10 digit classes (0 through 9).
+
+To solve this problem, we designed a multi-layer perceptron (MLP). The network architecture consists of two fully connected hidden layers, each followed by a non-linear activation function, and a final softmax output layer. The softmax layer converts the raw outputs (logits) into a probability distribution over the 10 classes. The model is trained using categorical cross-entropy loss, which is appropriate for multi-class classification.
+
+@fig-4 illustrates the evolution of the training and validation loss as well as accuracy over time. As expected, the training loss decreases steadily, and validation accuracy increases over the course of training. The convergence pattern indicates the model generalizes well, with minimal overfitting. These results validate the effectiveness of our network design and optimization strategy on this task. The model stop to learn after five epochs and \~96% accuracy.
+
+#figure(caption: [
+  The figure displays training and validation loss (resp. accuracy) for the
+  MNIST classification task. The model is a sequential model with two hidden layers of 64 then 32 neurons and a softmax output layer. The model is trained with the Adam optimizer, a learning rate of 0.001, a batch size of 128 and 50 epochs. The activation function of the first layer is ReLU.
+  The model is trained on the MNIST dataset, which consists of 60,000 training images and 10,000 test images. The model is evaluated on the test set after training.
+  The last figure shows two examples of misclassified images.
+], image("./figures/mnist_classification.svg")) <fig-4>
+
+== Activation functions experiments
+
+Activation functions play a crucial role in the learning dynamics of neural networks. They introduce non-linearity into neural networks, allowing them to approximate complex, non-linear functions. Without non-linear activations, a network with multiple layers would be equivalent to a single linear transformation. Choosing an appropriate activation function is therefore crucial for enabling the network to model the structure of the data.
+
+We compare the performance of three common non-linear activation functions: ReLU, Sigmoid, and TanH. Each function is used in the first hidden layer of an otherwise identical model, which includes two hidden layers of sizes 64 and 32, and a softmax output layer.
+
+The activation functions are defined as follows:
+
+*ReLU* (Rectified Linear Unit):
+  $f(x) = max(0, x)$
+
+*Sigmoid*:
+  $f(x) = 1/(1 + e^{-x})$
+
+*TanH* (Hyperbolic Tangent):
+  $f(x) = {e^x - e^{-x}}/{e^x + e^{-x}}$
+
+As shown in @fig-5, TanH and ReLU largely outperforms the Sigmoid activation function in terms of final test accuracy. TanH seems a little bit better than ReLU but it must be reminded that there is only two hidden layers. In practice, in more advanced networks, ReLU attenuates the vanishing gradient problem. It must also be precised that it converge way faster and is way cheaper in calculation time because of its simplicity. These results confirm ReLU as a robust default choice for modern neural networks.
+
+#figure(caption: [
+  Accuracy of the model with different activation functions. The model is a sequential model with two hidden layers of 64 then 32 neurons and a softmax output layer. The model is trained with the Adam optimizer, a learning rate of 0.001, a batch size of 128 and 50 epochs. The activation function of the first layer is either TanH, Sigmoid or ReLU.
+], image("./figures/mnist_activation.svg")) <fig-5>
+
+== Batch experiments
+
+Batch size refers to the number of training samples used in a single forward and backward pass during training. It impacts both training stability and computational efficiency. Larger batches make better use of parallel computation (e.g., on GPUs), but too-large batches can lead to poor generalization and slower convergence. They may cause the optimizer to get stuck in sharp minima or plateaus. Smaller batches introduce noise in the gradient estimates, which can help escape local minima but can also destabilize training and convergence stability. We evaluate several batch sizes to assess their impact on training dynamics and final accuracy.
+
+In @fig-6, we observe that medium-sized batches strike a good balance between convergence speed and final accuracy. These results suggest that batch size is a key hyperparameter for controlling the stability and efficiency of training. 64 samples per batch, even if it achieves the highest accuracy, has a large variance typical of a low number of samples per batch. 128 samples per batch seem to be a good compromise between accuracy and variance.
+
+#figure(caption: [
+  Accuracy of the model with different batch sizes. The model is a sequential model with two hidden layers of 64 then 32 neurons and a softmax output layer. The model is trained with the Adam optimizer, a learning rate of 0.001 and 50 epochs. The activation function of the first layer is ReLU.
+], image("./figures/mnist_batch.svg")) <fig-6>
+
+== Hidden layers size experiments
+
+We investigate how the number of neurons in hidden layers affects classification performance. We experiment with models containing two hidden layers, each having 16, 32, 64, or 128 neurons.
+
+As shown in @fig-7, increasing the number of neurons improves accuracy up to a point. The model with [64, 64] hidden neurons achieves high accuracy, while [128, 128] offers only marginal improvement by a few tenths of a percent. Models with [16, 16] or [32, 32] neurons underperform due to insufficient capacity to model the data complexity. These findings highlight the importance of finding an appropriate trade-off between model capacity and overfitting risk.
+
+#figure(caption: [
+  Accuracy of the model with different numbers of hidden layers. The model is a sequential model with hidden layers of sizes 16, 32, 64, and 128 neurons (e.g., [16, 16], [32, 32], [64, 64], [128, 128]) and a softmax output layer. The model is trained with the Adam optimizer, a learning rate of 0.001, a batch size of 128, and 50 epochs. The activation function of the first layer is ReLU.
+], image("./figures/mnist_hidden.svg")) <fig-7>
+
+== Optimizers
+
+The optimizer dictates how weights are updated during training. We compare the standard SGD, SGD with momentum, and Adam, a popular adaptive gradient method.
+
+@fig-8 shows that Adam consistently leads to faster convergence and better final accuracy. It combines the benefits of both momentum and adaptive learning rates, making it well-suited for training deep models. While SGD with momentum improves over vanilla SGD, it still lags behind Adam in performance. These results support the widespread use of Adam as a reliable optimizer in neural network training.
+
+#figure(caption: [
+  Accuracy for the classic SGD optimizer, SGD with Momentum and the Adam optimizer. The model is a sequential model with two hidden layers of 64 then 32 neurons and a softmax output layer. The model is trained with a learning rate of 0.001, a batch size of 128 and 50 epochs. The activation function of the first layer is ReLU.
+], image("./figures/mnist_optimizer.svg")) <fig-8>
