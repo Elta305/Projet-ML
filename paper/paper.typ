@@ -163,38 +163,42 @@ The activation functions are defined as follows:
 *TanH* (Hyperbolic Tangent):
   $f(x) = {e^x - e^{-x}}/{e^x + e^{-x}}$
 
-As shown in @fig-5, TanH and ReLU largely outperforms the Sigmoid activation function in terms of final test accuracy. TanH seems a little bit better than ReLU but it must be reminded that there is only two hidden layers. In practice, in more advanced networks, ReLU attenuates the vanishing gradient problem. It must also be precised that it converge way faster and is way cheaper in calculation time because of its simplicity. These results confirm ReLU as a robust default choice for modern neural networks.
+As shown in @fig-5, TanH and ReLU largely outperforms the Sigmoid activation function in terms of final test accuracy. TanH seems a little bit better than ReLU but it must be reminded that we trained the networks on a simple dataset and only have two hidden layers. In practice, in more advanced networks, ReLU attenuates the vanishing gradient problem. It must also be precised that it converge way faster and is way cheaper in calculation time because of its simplicity. These results confirm ReLU as a robust default choice for modern neural networks.
 
 #figure(caption: [
-  Accuracy of the model with different activation functions. The model is a sequential model with two hidden layers of 64 then 32 neurons and a softmax output layer. The model is trained with the Adam optimizer, a learning rate of 0.001, a batch size of 128 and 50 epochs. The activation function of the first layer is either TanH, Sigmoid or ReLU.
+  Accuracy of the model with different activation functions on MNIST dataset. The model is a sequential model with two hidden layers of 64 then 32 neurons and a softmax output layer. The model is trained with the Adam optimizer, a learning rate of 0.001, a batch size of 128 and 50 epochs. The activation function of the first layer is either TanH, Sigmoid or ReLU.
 ], image("./figures/mnist_activation.svg")) <fig-5>
 
 == Batch experiments
 
 Batch size refers to the number of training samples used in a single forward and backward pass during training. It impacts both training stability and computational efficiency. Larger batches make better use of parallel computation (e.g., on GPUs), but too-large batches can lead to poor generalization and slower convergence. They may cause the optimizer to get stuck in sharp minima or plateaus. Smaller batches introduce noise in the gradient estimates, which can help escape local minima but can also destabilize training and convergence stability. We evaluate several batch sizes to assess their impact on training dynamics and final accuracy.
 
-In @fig-6, we observe that medium-sized batches strike a good balance between convergence speed and final accuracy. These results suggest that batch size is a key hyperparameter for controlling the stability and efficiency of training. 64 samples per batch, even if it achieves the highest accuracy, has a large variance typical of a low number of samples per batch. 128 samples per batch seem to be a good compromise between accuracy and variance.
+In @fig-6, we observe that medium-sized batches strike a good balance between convergence speed and final accuracy. These results suggest that batch size is a key hyperparameter for controlling the stability and efficiency of training. 64 samples per batch, even if it achieves the highest accuracy, has a large variance typical of a low number of samples per batch. On MNIST dataset, 128 samples per batch seem to be a good compromise between accuracy and variance.
 
 #figure(caption: [
-  Accuracy of the model with different batch sizes. The model is a sequential model with two hidden layers of 64 then 32 neurons and a softmax output layer. The model is trained with the Adam optimizer, a learning rate of 0.001 and 50 epochs. The activation function of the first layer is ReLU.
+  Accuracy of the model with different batch sizes on MNIST dataset. The model is a sequential model with two hidden layers of 64 then 32 neurons and a softmax output layer. The model is trained with the Adam optimizer, a learning rate of 0.001 and 50 epochs. The activation function of the first layer is ReLU.
 ], image("./figures/mnist_batch.svg")) <fig-6>
 
 == Hidden layers size experiments
+
+The size of each hidden layer determines the capacity of the network to model complex functions. A layer with too few neurons may underfit the data, failing to capture its patterns. Conversely, too many neurons can overfit or introduce unnecessary computation.
 
 We investigate how the number of neurons in hidden layers affects classification performance. We experiment with models containing two hidden layers, each having 16, 32, 64, or 128 neurons.
 
 As shown in @fig-7, increasing the number of neurons improves accuracy up to a point. The model with [64, 64] hidden neurons achieves high accuracy, while [128, 128] offers only marginal improvement by a few tenths of a percent. Models with [16, 16] or [32, 32] neurons underperform due to insufficient capacity to model the data complexity. These findings highlight the importance of finding an appropriate trade-off between model capacity and overfitting risk.
 
 #figure(caption: [
-  Accuracy of the model with different numbers of hidden layers. The model is a sequential model with hidden layers of sizes 16, 32, 64, and 128 neurons (e.g., [16, 16], [32, 32], [64, 64], [128, 128]) and a softmax output layer. The model is trained with the Adam optimizer, a learning rate of 0.001, a batch size of 128, and 50 epochs. The activation function of the first layer is ReLU.
+  Accuracy of the model with different numbers of hidden layers on MNIST dataset. The model is a sequential model with hidden layers of sizes 16, 32, 64, and 128 neurons (e.g., [16, 16], [32, 32], [64, 64], [128, 128]) and a softmax output layer. The model is trained with the Adam optimizer, a learning rate of 0.001, a batch size of 128, and 50 epochs. The activation function of the first layer is ReLU.
 ], image("./figures/mnist_hidden.svg")) <fig-7>
 
 == Optimizers
 
-The optimizer dictates how weights are updated during training. We compare the standard SGD, SGD with momentum, and Adam, a popular adaptive gradient method.
+The optimizer determines how the model's parameters are updated during training based on gradients. Different optimizers implement different update rules and tradeoffs between speed of convergence, stability, and generalization. We compare the standard SGD, SGD with momentum, and Adam, a popular adaptive gradient method.
 
-@fig-8 shows that Adam consistently leads to faster convergence and better final accuracy. It combines the benefits of both momentum and adaptive learning rates, making it well-suited for training deep models. While SGD with momentum improves over vanilla SGD, it still lags behind Adam in performance. These results support the widespread use of Adam as a reliable optimizer in neural network training.
+SGD (Stochastic Gradient Descent) updates weights using noisy gradient estimates based on mini-batches. It is simple but is slow and can get stuck in local minima. SGD with Momentum incorporates a moving average of past gradients to accelerate convergence and smooth updates. Helps escape shallow minima and navigate ravines. Adam (Adaptive Moment Estimation) combines momentum and per-parameter adaptive learning rates. It maintains estimates of both first and second moments of gradients. Adam is known for fast convergence and robust performance across a wide range of tasks.
+
+@fig-8 shows that Adam consistently leads to better final accuracy. This reflects the benefit of adaptive learning rates and momentum for deep learning. It is making it well-suited for training deep models. While SGD with momentum improves over vanilla SGD, it still lags behind Adam in performance. These results support the widespread use of Adam as a reliable optimizer in neural network training.
 
 #figure(caption: [
-  Accuracy for the classic SGD optimizer, SGD with Momentum and the Adam optimizer. The model is a sequential model with two hidden layers of 64 then 32 neurons and a softmax output layer. The model is trained with a learning rate of 0.001, a batch size of 128 and 50 epochs. The activation function of the first layer is ReLU.
+  Accuracy for the classic SGD optimizer, SGD with Momentum and the Adam optimizer on MNIST dataset. The model is a sequential model with two hidden layers of 64 then 32 neurons and a softmax output layer. The model is trained with a learning rate of 0.001, a batch size of 128 and 50 epochs. The activation function of the first layer is ReLU.
 ], image("./figures/mnist_optimizer.svg")) <fig-8>
