@@ -74,7 +74,36 @@ These results indicate our implementation correctly applies the gradient descent
 
 == Linear and non-linear classification
 
-#lorem(50)
+Neural networks can also be used for classification tasks. We can adapt our linear regression model to classify data points into $k$ classes. The output layer is a softmax layer, which normalizes the output to a probability distribution over the classes. The loss function is categorical cross-entropy, defined as:
+$
+cal(L) (y, hat(y)) = -1/n sum_(i=0)^n sum_(j=0)^k y_i j log(hat(y)_j)
+$
+
+where $y_i j$ is $1$ if the $i$-th example belongs to class $j$, and $0$ otherwise. The gradient of the loss with respect to the output is:
+$
+gradient_bold(hat(y)) cal(L) = hat(y) - y
+$
+The training process is similar to linear regression, but we use the softmax layer and categorical cross-entropy loss. The algorithm is as follows:
+#algorithm(
+  title: [Gradient descent for classification],
+  input: [$bold(x)$ examples, $y$ labels, $eta$, $cal(E)$],
+  output: [$bold(W), b$],
+  steps: (
+    ([$bold(W) random RR^(p times d), b random RR^p$]),
+    ([*For* $e in {1, ..., cal(E)}$]),
+    (depth: 1, line: [$hat(y) <- "softmax"(bold(W) bold(x) + b)$]),
+    (depth: 1, line: [$cal(L) <- -1/n sum (y_i log(hat(y)_i))$]),
+    (depth: 1, line: [$gradient_bold(W) cal(L) <- gradient_bold(hat(y)) cal(L) bold(x)^T$]),
+    (depth: 1, line: [$gradient_b cal(L) <- sum gradient_bold(hat(y)) cal(L)$]),
+    (depth: 1, line: [$bold(W) <- bold(W) - eta gradient_bold(W) cal(L)$]),
+    (depth: 1, line: [$b <- b - eta gradient_b cal(L)$]),
+  )
+)
+
+=== Results analysis
+
+@fig-2 shows the results of our linear classification task. The model successfully separates the two classes, with a clear decision boundary. The loss curve indicates that the model converges quickly, with most improvement occurring in the first few epochs. The bottom plot shows the best and worst models, which both capture the underlying structure of the data.
+@fig-3 shows the results of our non-linear classification task on the XOR problem. The model successfully separates the two classes, with a clear decision boundary. Although the loss curve converge a little bit slowly, it is still pretty fast, with most improvement occurring in the first few epochs. The bottom plot shows the best and worst models, which both capture the underlying structure of the data.
 
 #figure(caption: [
   This figure displays training results from $100$ linear regression trials
@@ -85,8 +114,18 @@ These results indicate our implementation correctly applies the gradient descent
 ], image("./figures/linear_regression.svg")) <fig-1>
 
 #figure(caption: [
+  This figure displays training results from $100$ linear classification trials
+  ($n=100$) with $200$ samples per run ($sigma=200$), learning rate $0.01$
+  ($eta=0.01$), and $1000$ epochs ($cal(E)=1000$). The top plot shows the
+  interquartile mean loss and Q1-Q3 range during training, while the bottom
+  plots contrast the best and worst performing models from the ensemble.
 ], image("./figures/linear_classification.svg")) <fig-2>
 
 
 #figure(caption: [
+  This figure displays training results from $100$ non-linear classification
+  trials ($n=100$) with $200$ samples per run ($sigma=200$), learning rate
+  $0.01$ ($eta=0.01$), and $1000$ epochs ($cal(E)=1000$). The top plot shows
+  the interquartile mean loss and Q1-Q3 range during training, while the bottom
+  plots contrast the best and worst performing models from the ensemble.
 ], image("./figures/non_linear_classification.svg")) <fig-3>
