@@ -3,46 +3,13 @@ from pathlib import Path
 
 import numpy as np
 from tqdm import tqdm
+from utils import generate_linear_data, get_batches
 
 from mlp.linear import Linear
 from mlp.loss import MSELoss
 
 
-def generate_linear_data(n_samples=1000, noise=0.5, seed=None):
-    if seed is not None:
-        np.random.seed(seed)
-
-    x = np.random.rand(n_samples, 1) * 10
-    true_weight = np.random.uniform(-5, 5)
-    true_bias = np.random.uniform(-10, 10)
-    y = true_weight * x + true_bias + noise * np.random.randn(n_samples, 1)
-
-    return x, y, true_weight, true_bias
-
-
-def get_batches(x, y, batch_size):
-    n_samples = x.shape[0]
-    indices = np.random.permutation(n_samples)
-
-    x_shuffled = x[indices]
-    y_shuffled = y[indices]
-
-    n_batches = int(np.ceil(n_samples / batch_size))
-    batches = []
-
-    for i in range(n_batches):
-        start_idx = i * batch_size
-        end_idx = min((i + 1) * batch_size, n_samples)
-
-        batch_x = x_shuffled[start_idx:end_idx]
-        batch_y = y_shuffled[start_idx:end_idx]
-
-        batches.append((batch_x, batch_y))
-
-    return batches
-
-
-def train_linear_model(x, y, batch_size=32, learning_rate=0.01, n_epochs=500):
+def train_model(x, y, batch_size=32, learning_rate=0.01, n_epochs=500):
     """Train a linear regression model."""
     input_dim = x.shape[1]
     output_dim = y.shape[1]
@@ -103,7 +70,7 @@ def main():
         true_weights.append(true_weight)
         true_biases.append(true_bias)
 
-        model, losses = train_linear_model(
+        model, losses = train_model(
             x, y, learning_rate=learning_rate, n_epochs=n_epochs
         )
 

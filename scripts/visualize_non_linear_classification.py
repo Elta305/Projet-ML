@@ -3,18 +3,7 @@ import pickle
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.gridspec import GridSpec
-
-
-def compute_stats(values: list[float]) -> dict[str, float]:
-    """Compute statistical measures from an array of values."""
-    values = np.array(values)
-    q1, q3 = np.percentile(values, [25, 75])
-    mask = (values >= q1) & (values <= q3)
-    interquartile_values = values[mask]
-    iqm = np.mean(interquartile_values)
-    mins = np.min(values)
-    maxs = np.max(values)
-    return {"iqm": iqm, "q1": q1, "q3": q3, "min": mins, "max": maxs}
+from utils import compute_stats
 
 
 def main():

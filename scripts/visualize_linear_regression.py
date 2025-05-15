@@ -3,18 +3,7 @@ import pickle
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.gridspec import GridSpec
-
-
-def compute_stats(values: list[float]) -> dict[str, float]:
-    """Compute statistical measures from an array of values."""
-    values = np.array(values)
-    q1, q3 = np.percentile(values, [25, 75])
-    mask = (values >= q1) & (values <= q3)
-    interquartile_values = values[mask]
-    iqm = np.mean(interquartile_values)
-    mins = np.min(values)
-    maxs = np.max(values)
-    return {"iqm": iqm, "q1": q1, "q3": q3, "min": mins, "max": maxs}
+from utils import compute_stats
 
 
 def main():
@@ -91,24 +80,24 @@ def main():
 
     def generate_synthetic_data(seed):
         np.random.seed(seed)
-        X = np.random.rand(n_samples, 1) * 10
+        x = np.random.rand(n_samples, 1) * 10
         true_weight = true_weights[seed]
         true_bias = true_biases[seed]
         noise = params["noise"]
 
-        y = true_weight * X + true_bias + noise * np.random.randn(n_samples, 1)
+        y = true_weight * x + true_bias + noise * np.random.randn(n_samples, 1)
 
-        return X, y
+        return x, y
 
-    X_median, y_median = generate_synthetic_data(median_idx)
-    X_worst, y_worst = generate_synthetic_data(worst_idx)
-    X_viz = np.linspace(0, 10, 100).reshape(-1, 1)
+    x_median, y_median = generate_synthetic_data(median_idx)
+    x_worst, y_worst = generate_synthetic_data(worst_idx)
+    x_viz = np.linspace(0, 10, 100).reshape(-1, 1)
 
     ax2 = fig.add_subplot(gs[1, 0])
-    ax2.scatter(X_median, y_median, color="#3498db", alpha=0.2)
+    ax2.scatter(x_median, y_median, color="#3498db", alpha=0.2)
     ax2.plot(
-        X_viz,
-        X_viz * all_weights[median_idx] + all_biases[median_idx],
+        x_viz,
+        x_viz * all_weights[median_idx] + all_biases[median_idx],
         "--",
         color="black",
         linewidth=2,
@@ -118,10 +107,10 @@ def main():
     ax2.set_title("Median Run")
 
     ax3 = fig.add_subplot(gs[1, 1])
-    ax3.scatter(X_worst, y_worst, color="#3498db", alpha=0.2)
+    ax3.scatter(x_worst, y_worst, color="#3498db", alpha=0.2)
     ax3.plot(
-        X_viz,
-        X_viz * all_weights[worst_idx] + all_biases[worst_idx],
+        x_viz,
+        x_viz * all_weights[worst_idx] + all_biases[worst_idx],
         "--",
         color="black",
         linewidth=2,

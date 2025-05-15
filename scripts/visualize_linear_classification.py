@@ -3,18 +3,7 @@ import pickle
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.gridspec import GridSpec
-
-
-def compute_stats(values: list[float]) -> dict[str, float]:
-    """Compute statistical measures from an array of values."""
-    values = np.array(values)
-    q1, q3 = np.percentile(values, [25, 75])
-    mask = (values >= q1) & (values <= q3)
-    interquartile_values = values[mask]
-    iqm = np.mean(interquartile_values)
-    mins = np.min(values)
-    maxs = np.max(values)
-    return {"iqm": iqm, "q1": q1, "q3": q3, "min": mins, "max": maxs}
+from utils import compute_stats
 
 
 def main():
@@ -160,12 +149,12 @@ def main():
     x_median, y_median = generate_synthetic_data(iqm_idx)
     x_worst, y_worst = generate_synthetic_data(q1_idx)
 
-    def plot_decision_boundary(ax, X, y, weights, bias):
+    def plot_decision_boundary(ax, x, y, weights, bias):
         w = np.array(weights).flatten()
         b = np.array(bias).flatten()[0]
 
-        x_min, x_max = X[:, 0].min() - 1, X[:, 0].max() + 1
-        y_min, y_max = X[:, 1].min() - 1, X[:, 1].max() + 1
+        x_min, x_max = x[:, 0].min() - 1, x[:, 0].max() + 1
+        y_min, y_max = x[:, 1].min() - 1, x[:, 1].max() + 1
         xx, yy = np.meshgrid(
             np.linspace(x_min, x_max, 100), np.linspace(y_min, y_max, 100)
         )
@@ -177,12 +166,12 @@ def main():
             xx, yy, z, levels=[0], colors="black", linestyles="--", linewidths=2
         )
 
-        y_pred = np.sign(np.dot(X, w) + b)
+        y_pred = np.sign(np.dot(x, w) + b)
 
         mask = (y.flatten() == 1) & (y_pred.flatten() == 1)
         ax.scatter(
-            X[mask, 0],
-            X[mask, 1],
+            x[mask, 0],
+            x[mask, 1],
             color="#3498db",
             marker="o",
             alpha=0.15,
@@ -191,8 +180,8 @@ def main():
         # True class +1, predicted -1 (red circle)
         mask = (y.flatten() == 1) & (y_pred.flatten() == -1)
         ax.scatter(
-            X[mask, 0],
-            X[mask, 1],
+            x[mask, 0],
+            x[mask, 1],
             color="#d66b6a",
             marker="o",
             alpha=0.25,
@@ -201,8 +190,8 @@ def main():
         # True class -1, predicted +1 (blue cross)
         mask = (y.flatten() == -1) & (y_pred.flatten() == 1)
         ax.scatter(
-            X[mask, 0],
-            X[mask, 1],
+            x[mask, 0],
+            x[mask, 1],
             color="#3498db",
             marker="x",
             alpha=0.25,
@@ -211,8 +200,8 @@ def main():
         # True class -1, predicted -1 (red cross)
         mask = (y.flatten() == -1) & (y_pred.flatten() == -1)
         ax.scatter(
-            X[mask, 0],
-            X[mask, 1],
+            x[mask, 0],
+            x[mask, 1],
             color="#d66b6a",
             marker="x",
             alpha=0.15,

@@ -120,7 +120,7 @@ def plot_iqm(all_losses, worst_best=True):
     # each inner list contains the losses at each iteration for a specific run
     # The interquartile mean (IQM) is calculated by taking the mean of the values within the interquartile range (IQR)
     # In order to get this mean, we need to take the data from every losses list in all_losses and calculate the IQR for each iteration
-    # So the IQM is made for each iteration. The final plot has the length of the longest list in all_losses 
+    # So the IQM is made for each iteration. The final plot has the length of the longest list in all_losses
     # Then we can plot the IQM for each iteration
     # if worst_best is True, we also plot the worst and best losses based on their last loss
     # code

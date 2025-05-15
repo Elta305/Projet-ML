@@ -60,18 +60,17 @@ class MSELoss(Loss):
         return gradient
 
 
-class CrossEntropyLoss(Loss):
+class CrossEntropyLoss:
     def __init__(self):
         super().__init__()
 
     def forward(self, y, yhat):
-        assert y.shape == yhat.shape, (
-            "Targets and predictions must have the same shape"
-        )
-        return 1 - (yhat * y).sum(axis=1)
+        eps = 1e-10
+        yhat_clipped = np.clip(yhat, eps, 1 - eps)
 
-    def backward(self, targets, predictions):
-        assert targets.shape == predictions.shape, (
-            "Targets and predictions must have the same shape"
-        )
-        return predictions - targets
+        batch_size = y.shape[0]
+        return -np.sum(y * np.log(yhat_clipped)) / batch_size
+
+    def backward(self, y, yhat):
+        batch_size = y.shape[0]
+        return (yhat - y) / batch_size

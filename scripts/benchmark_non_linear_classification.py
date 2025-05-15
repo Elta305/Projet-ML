@@ -9,74 +9,7 @@ from mlp.linear import Linear
 from mlp.loss import MSELoss
 from mlp.sequential import Sequential
 
-
-def generate_classification_data(
-    n_samples=1000, n_features=2, n_classes=2, separation=1.0, seed=None
-):
-    if seed is not None:
-        np.random.seed(seed)
-
-    centers = np.array(
-        [
-            [separation, separation],
-            [-separation, -separation],
-            [separation, -separation],
-            [-separation, separation],
-        ]
-    )
-
-    x = np.zeros((n_samples, n_features))
-    y = np.zeros((n_samples, 1))
-
-    samples_per_quadrant = n_samples // 4
-
-    x[0:samples_per_quadrant] = centers[0] + np.random.randn(
-        samples_per_quadrant, n_features
-    )
-    y[0:samples_per_quadrant] = 1
-
-    x[samples_per_quadrant : 2 * samples_per_quadrant] = centers[
-        1
-    ] + np.random.randn(samples_per_quadrant, n_features)
-    y[samples_per_quadrant : 2 * samples_per_quadrant] = 1
-
-    x[2 * samples_per_quadrant : 3 * samples_per_quadrant] = centers[
-        2
-    ] + np.random.randn(samples_per_quadrant, n_features)
-    y[2 * samples_per_quadrant : 3 * samples_per_quadrant] = -1
-
-    x[3 * samples_per_quadrant :] = centers[3] + np.random.randn(
-        n_samples - 3 * samples_per_quadrant, n_features
-    )
-    y[3 * samples_per_quadrant :] = -1
-
-    indices = np.random.permutation(n_samples)
-    x = x[indices]
-    y = y[indices]
-
-    return x, y, centers
-
-
-def get_batches(x, y, batch_size):
-    n_samples = x.shape[0]
-    indices = np.random.permutation(n_samples)
-
-    x_shuffled = x[indices]
-    y_shuffled = y[indices]
-
-    n_batches = int(np.ceil(n_samples / batch_size))
-    batches = []
-
-    for i in range(n_batches):
-        start_idx = i * batch_size
-        end_idx = min((i + 1) * batch_size, n_samples)
-
-        batch_x = x_shuffled[start_idx:end_idx]
-        batch_y = y_shuffled[start_idx:end_idx]
-
-        batches.append((batch_x, batch_y))
-
-    return batches
+from .utils import generate_xor_classification_data, get_batches
 
 
 def train_model(x, y, batch_size=32, learning_rate=0.01, n_epochs=500):
@@ -153,7 +86,7 @@ def main():
     all_centers = []
 
     for run in tqdm(range(n_runs), desc="Running classification trials"):
-        x, y, centers = generate_classification_data(
+        x, y, centers = generate_xor_classification_data(
             n_samples=n_samples,
             n_features=n_features,
             n_classes=n_classes,
