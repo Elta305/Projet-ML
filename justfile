@@ -105,3 +105,18 @@ test:
 
 paper:
   @typst watch paper/paper.typ
+
+publish:
+  rm -fr dist
+  rm -fr ML-paulchambaz-fredericlicombeau
+  mkdir -p ML-paulchambaz-fredericlicombeau
+  mkdir -p ML-paulchambaz-fredericlicombeau/mlp
+  cp -r mlp/*.py ML-paulchambaz-fredericlicombeau/mlp
+  mkdir -p ML-paulchambaz-fredericlicombeau/scripts
+  cp -r scripts/*.py ML-paulchambaz-fredericlicombeau/scripts
+  cp paper/paper.pdf ML-paulchambaz-fredericlicombeau
+  cp README.md ML-paulchambaz-fredericlicombeau
+  zip -r ML-paulchambaz-fredericlicombeau.zip ML-paulchambaz-fredericlicombeau
+  rm -fr ML-paulchambaz-fredericlicombeau
+  mkdir -p dist
+  mv ML-paulchambaz-fredericlicombeau.zip dist/

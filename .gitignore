@@ -161,3 +161,4 @@ CMakeCache.txt
 *.obj
 
 # Add any other project-specific ignores here
+results/*
