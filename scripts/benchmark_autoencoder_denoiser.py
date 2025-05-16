@@ -3,17 +3,10 @@ from pathlib import Path
 
 import numpy as np
 from tqdm import tqdm
-from utils import create_autoencoder, get_batches, get_mnist
+from utils import add_gaussian_noise, create_autoencoder, get_batches, get_mnist
 
-from mlp.loss import CrossEntropyLoss, MSELoss
+from mlp.loss import MSELoss
 from mlp.optim import Adam
-
-
-def add_gaussian_noise(images, noise_factor):
-    noisy_images = images.copy()
-    noise = np.random.normal(loc=0.0, scale=noise_factor, size=images.shape)
-    noisy_images = noisy_images + noise
-    return np.clip(noisy_images, 0.0, 1.0)
 
 
 def train_denoising_autoencoder(
@@ -33,13 +26,14 @@ def train_denoising_autoencoder(
     input_dim = x_train.shape[1]
 
     model = create_autoencoder(input_dim, latent_dim, depth)
-    loss_fn = CrossEntropyLoss()
+    loss_fn = MSELoss()
     optimizer = Adam(model, loss_fn, eps=learning_rate)
 
     best_val_loss = float("inf")
     best_model_state = None
 
-    for _ in tqdm(range(max_epochs), leave=False):
+    pbar = tqdm(range(max_epochs), leave=False)
+    for _ in pbar:
         noisy_x_train = add_gaussian_noise(x_train, noise_factor)
 
         batches = get_batches(noisy_x_train, x_train, batch_size)
@@ -50,6 +44,8 @@ def train_denoising_autoencoder(
         noisy_x_val = add_gaussian_noise(x_val, noise_factor)
         val_output = model.forward(noisy_x_val)
         val_loss = loss_fn.forward(x_val, val_output)
+
+        pbar.set_postfix(val_loss=f"{val_loss:.4f}")
 
         if val_loss < best_val_loss:
             best_val_loss = val_loss
@@ -83,7 +79,7 @@ def main():
         x_train=x_train,
         x_val=x_val,
         latent_dim=64,
-        depth=3,
+        depth=5,
         noise_factor=0.2,
         batch_size=128,
         learning_rate=0.001,

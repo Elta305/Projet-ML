@@ -413,3 +413,10 @@ def create_autoencoder(input_dim, latent_dim, depth):
     layers.append(Sigmoid())
 
     return Sequential(*layers)
+
+
+def add_gaussian_noise(images, noise_factor):
+    noisy_images = images.copy()
+    noise = np.random.normal(loc=0.0, scale=noise_factor, size=images.shape)
+    noisy_images = noisy_images + noise
+    return np.clip(noisy_images, 0.0, 1.0)

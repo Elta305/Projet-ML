@@ -76,6 +76,12 @@ visualize-autoencoder-matrix:
 visualize-autoencoder-examples:
   @uv run scripts/visualize_autoencoder_examples.py
 
+visualize-latent-space:
+  @uv run scripts/visualize_latent_space.py
+
+visualize-latent-centroids:
+  @uv run scripts/visualize_latent_centroids.py
+
 benchmark-autoencoder-denoiser:
   @uv run scripts/benchmark_autoencoder_denoiser.py
 

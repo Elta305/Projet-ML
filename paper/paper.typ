@@ -10,207 +10,313 @@
   reference: [ Master 1 -- #smallcaps[Ai2d] -- 2025 ],
   nb-columns: 2,
   abstract: [
-    This project implements a neural network framework from first principles, beginning with linear regression and extending to more complex architectures.
+  This project implements a neural network framework from first principles, beginning with linear regression and extending to more complex architectures. Our experiments on MNIST identify optimal hyperparameters while demonstrating effective dimensionality reduction and robust denoising capabilities in autoencoder models.
   ]
 )
 
-== Linear Regression
+== Preliminaries
 
-Neural networks begin with linear regression. Let $x in RR^d$ be our input vector with dimension $d$, $W in RR^(p times d)$ a weight matrix mapping to $p$ outputs, and $b in RR^p$ a bias vector. The linear transformation computes:
+=== Linear Regression and Classification
+Neural networks begin with linear regression, a foundation for more complex models. For input $x in RR^d$, a linear model computes $hat(y) = W x + b$ where $W in RR^{p times d}$ and $b in RR^p$ are parameters.
 
-$
-hat(y) = bold(W) bold(x) + b
-$
-
-// TODO: this part is badly explained - we should just compute directly both sides (both fractions of partials in the gradients) to show where they come from since it would be cleaner
-This computation forms the core of our linear layer. Learning occurs through gradient descent, which requires computing how changes in weights affect the loss. Let $cal(L)$ be our loss function, mean square error. The weight gradients are:
+Training involves minimizing a loss function through gradient descent. For mean squared error:
 
 $
-gradient_bold(W) cal(L)
-= (partial cal(L))/(partial hat(y)) (partial hat(y))/(partial bold(W))
+cal(L)(y, hat(y)) = 1/n sum_{i=1}^n (y_i - hat(y)_i)^2
 $
 
-For a linear layer, $(partial hat(y))/(partial bold(W)_(i j)) = x_j$ for output $hat(y)_i$, which in matrix form is $(partial hat(y))/(partial bold(W)) = x^T$.
-
-For MSE, defined as:
+The gradient with respect to parameters is computed:
 
 $
-cal(L) (y, hat(y)) = 1/n sum_(i=0)^n (y_i - hat(y)_i)^2
+gradient_W cal(L) = -2/n (y - hat(y)) x^T
 $
 
-This gradient is:
-
 $
-(partial cal(L))/(partial hat(y)) = -2/n (y - hat(y))
+gradient_b cal(L) = -2/n sum (y - hat(y))
 $
 
-Our implementation seperates these concerns into distinct modules:
-- A `Linear` module handling forward computation and gradient calculations ;
-- A `MSELoss` module computing the loss and its gradient ;
-- The base `Module` class defining interfaces for all layers, given by the handout.
+These gradients guide parameter updates iteratively:
 
-The training process iteratively applies gradient descent:
+$
+W <- W - eta gradient_W cal(L)
+$
 
-#algorithm(
-  title: [Gradient descent for linear regression],
-  input: [$bold(x)$ examples, $y$ labels, $eta$, $cal(E)$],
-  output: [$bold(W), b$],
-  steps: (
-    ([$bold(W) random RR^(p times d), b random RR^p$]),
-    ([*For* $e in {1, ..., cal(E)}$]),
-    (depth: 1, line: [$hat(y) <- bold(W) bold(x) + b$]),
-    (depth: 1, line: [$cal(L) <- 1/n sum (y_i - hat(y)_i)^2$]),
-    (depth: 1, line: [$gradient_bold(W) cal(L) <- -2/n (y-hat(y)) bold(x)^T$]),
-    (depth: 1, line: [$gradient_b cal(L) <- sum -2/n (y-hat(y))$]),
-    (depth: 1, line: [$bold(W) <- bold(W) - eta gradient_bold(W) cal(L)$]),
-    (depth: 1, line: [$b <- b - eta gradient_b cal(L)$]),
+$
+b <- b - eta gradient_b cal(L)
+$
+
+For classification tasks, we transform continuous outputs to class probabilities. The softmax function performs this transformation:
+
+$
+"softmax"(z)_i = e^(z_i) / (sum_(j=1)^k e^(z_j))
+$
+
+Combined with cross-entropy loss:
+
+$
+cal(L)(y, hat(y)) = -sum_(i=1)^k y_i log(hat(y)_i)
+$
+
+=== Adding Non-linearity
+Linear models cannot solve problems with non-linear decision boundaries. Activation functions introduce non-linearity:
+
+- ReLU: $f(x) = max(0, x)$
+
+- Sigmoid: $f(x) = 1/(1 + e^(-x))$
+
+- TanH: $f(x) = (e^x - e^(-x))/(e^x + e^(-x))$
+
+=== Multi-layer Perceptrons
+A multi-layer perceptron stacks linear transformations with non-linear activations:
+
+$
+z^((1)) = W^((1))x + b^((1))
+$
+
+$
+a^((1)) = f(z^((1)))
+$
+
+$
+z^((2)) = W^((2))a^((1)) + b^((2))
+$
+
+$
+a^((2)) = f(z^((2)))
+$
+
+This creates a function composition:
+
+$
+hat(y) = f^((L))(W^((L))f^((L-1))(...f^((1))(W^((1))x + b^((1)))...) + b^((L)))
+$
+
+=== Backpropagation
+Training neural networks requires computing gradients through the chain rule. Backpropagation computes these gradients efficiently:
+
+=== Modular Implementation
+
+Our framework implements neural networks as modules with standardized interfaces:
+
+- `Module`: Abstract base class defining forward/backward methods
+- `Linear`: Implements linear transformations with parameter management
+- `Activation`: Implements non-linear transformations (ReLU, Sigmoid, TanH)
+- `Loss`: Computes loss values and gradients (MSE, CrossEntropy)
+- `Sequential`: Chains modules for forward/backward propagation
+- `Optimizer`: Updates parameters using gradient information
+
+Each module requires:
+1. Forward pass to compute outputs
+2. Backward pass to compute gradients with respect to inputs
+3. Parameter update mechanisms
+
+This modular design enables flexible network construction and experimentation with different architectures and hyperparameters.
+
+#figure(caption: [Backpropagation Algorithm],
+  algorithm(
+    title: [#smallcaps[Backprop]],
+    input: [$cal(N)$, $x$, $y$, $eta$],
+    output: [$W^{(l)}, b^{(l)} quad forall l = 1,...,L$],
+    steps: (
+      ([Compute $a^((l))$ for all layers]),
+      ([$delta^((L)) = gradient_(a^((L)))cal(L) dot f'^((L))(z^((L)))$]),
+      ([$delta^((l)) = ((W^((l+1)))^T delta^((l+1))) dot f'^((l))(z^((l)))$]),
+      ([$gradient_(W^((l)))cal(L) = delta^((l))(a^((l-1)))^T$]),
+      ([$gradient_(b^((l)))cal(L) = delta^((l))$]),
+      ([$W^((l)) <- W^((l)) - eta gradient_(W^((l)))cal(L)$]),
+      ([$b^((l)) <- b^((l)) - eta gradient_(b^((l)))cal(L)$]),
+    )
   )
 )
 
-=== Results analysis
+== Basic Supervised Learning
 
-@fig-1 shows our linear regression results. The loss curve displays the expected pattern: rapid initial decrease followed by gradual convergence. Within 200 epochs, most improvement occurs, with minimal gains thereafter. The bottom plots contrast the median and worst models. Both capture linear relationships but with different slopes. The data points cluster tightly around both lines, showing both models learned useful patterns performance differences. This variability stems from random initialization and dataset generation.
+=== Linear Regression Implementation
+To implement linear regression, we created a `Linear` module that performs the forward computation $hat(y) = W x + b$ and computes gradients during backpropagation. The `MSELoss` module calculates the mean squared error and its gradient.
 
-These results indicate our implementation correctly applies the gradient descent algorithm. The smooth convergence indicates proper gradient computation and parameter updates.
+Training follows the gradient descent algorithm, with the optimizer handling parameter updates. Our implementation supports batch processing, where multiple samples are processed simultaneously.
 
 #figure(caption: [
-  This figure displays training results from $100$ linear regression trials
-  ($n=100$) with $200$ samples per run ($sigma=200$), learning rate $0.01$
-  ($eta=0.01$), and $1000$ epochs ($cal(E)=1000$). The top plot shows the
-  interquartile mean loss and Q1-Q3 range during training, while the bottom
-  plots contrast the median and worst performing models from the ensemble. To assure statistical significance, we made 15 runs for each experiments.
+  *Linear regression training results.* Top: Loss evolution over training epochs, showing interquartile mean (IQM) and interquartile range (IQR). Bottom: Comparison of median and worst models from 25 training runs. Both successfully learn linear relationships despite initialization differences. Models were trained for 200 epochs with learning rate 0.01 and batch size 32.
 ], image("./figures/linear_regression.svg")) <fig-1>
 
-== Linear and non-linear classification
+@fig-1 shows our linear regression results. The top plot displays loss evolution during training, with rapid initial decrease followed by convergence. The bottom plots compare median and worst-performing models, both capturing the underlying linear pattern with slight differences in fit quality.
 
-Neural networks can also be used for classification tasks. We can adapt our linear regression model to classify data points into $k$ classes. The output layer is a softmax layer, which normalizes the output to a probability distribution over the classes. The softmax activation and cross-entropy loss are often used together in classification tasks because they form a mathematically convenient and numerically stable pair.
+=== Binary Classification with Linear Boundaries
+For classification tasks, we extended our framework with a `Softmax` module and `CrossEntropyLoss`. The softmax activation transforms logits into probabilities, while cross-entropy quantifies prediction error.
 
-Softmax turns logits into probabilities
-Given raw outputs $z in RR^k$, softmax maps them to a probability distribution:
-$
-"softmax"(z)_i = e^{z_i} / (sum_{j=1}^k e^{z_j})
-$
-This ensures the outputs are in $[0, 1]$ and sum to $1$, thus interpretable as class probabilities.
-
-Cross-entropy measures the distance between predicted and true distributions. For a one-hot encoded true label $y$, and predicted probability $hat(y) = "softmax"(z)$, the loss is:
-$
-cal(L)(y, hat(y)) = - sum_{i=1}^k y_i log(hat(y)_i)
-$
-Since $y$ is one-hot, only the log probability of the correct class is penalized.
-
-Also, the gradient simplifies nicely as the derivative of the loss with respect to the input logits $z$ is:
-$
-(partial cal(L)) / (partial z) = hat(y) - y
-$
-This is much simpler than computing the gradient of softmax and cross-entropy separately. It reduces computation and avoids numerical instability.
-
-The training process is similar to linear regression, but we use the softmax layer and categorical cross-entropy loss. The algorithm is as follows:
-#algorithm(
-  title: [Gradient descent for classification],
-  input: [$bold(x)$ examples, $y$ labels, $eta$, $cal(E)$],
-  output: [$bold(W), b$],
-  steps: (
-    ([$bold(W) random RR^(p times d), b random RR^p$]),
-    ([*For* $e in {1, ..., cal(E)}$]),
-    (depth: 1, line: [$hat(y) <- "softmax"(bold(W) bold(x) + b)$]),
-    (depth: 1, line: [$cal(L) <- -1/n sum (y_i log(hat(y)_i))$]),
-    (depth: 1, line: [$gradient_bold(W) cal(L) <- gradient_bold(hat(y)) cal(L) bold(x)^T$]),
-    (depth: 1, line: [$gradient_b cal(L) <- sum gradient_bold(hat(y)) cal(L)$]),
-    (depth: 1, line: [$bold(W) <- bold(W) - eta gradient_bold(W) cal(L)$]),
-    (depth: 1, line: [$b <- b - eta gradient_b cal(L)$]),
-  )
-)
-
-=== Results analysis
-
-@fig-2 shows the results of our linear classification task. The model is trained on a dataset where the classes are linearly separable. The top plot displays the evolution of the loss during training, which decreases rapidly in the first epochs and then plateaus, indicating fast convergence. The interquartile mean and Q1-Q3 range show that most runs achieve similar performance, with low variance. The bottom plots illustrate the decision boundaries learned by the median and worst models. Both models successfully separate the two classes. The worst model still captures the general structure, but with a less optimal orientation, highlighting the effect of initialization and data variability.
-
-@fig-3 presents the results of our non-linear classification task, specifically on the XOR problem, which is not linearly separable: no single line can divide the true and false outputs in input space. This necessitates the use of a non-linear model with hidden layers to capture the disjoint decision regions. Here, the model includes a non-linear activation function, enabling it to learn the complex decision boundary required to separate the classes. The loss curve in the top plot decreases more slowly than in the linear case, reflecting the increased difficulty of the task, but still shows fast improvement. The bottom plots show the decision boundaries for the median and worst models. The median model successfully learns the non-linear structure of the XOR problem, while the worst model demonstrates some misclassification and less understanding of the problem as some parts at the right of the plot are classified as a part of the red dots. Overall, these results confirm that our implementation can handle both linear and non-linear classification problems effectively.
+Implementing classification required modifying our training loop to handle one-hot encoded labels and evaluate using accuracy rather than MSE.
 
 #figure(caption: [
-  This figure displays training results from $100$ linear classification trials
-  ($n=100$) with $200$ samples per run ($sigma=200$), learning rate $0.01$
-  ($eta=0.01$), and $1000$ epochs ($cal(E)=1000$). The top plot shows the
-  interquartile mean loss and Q1-Q3 range during training, while the bottom
-  plots contrast the median and worst performing models from the ensemble.
+  *Linear classification training results.* Top: Loss evolution over training epochs, showing interquartile mean (IQM) and interquartile range (IQR). Middle: Accuracy improvement during training. Bottom: Comparison of median and worst models, showing decision boundaries separating two classes (red and blue points). Models were trained for 256 epochs with learning rate 0.01 and batch size 32.
 ], image("./figures/linear_classification.svg")) <fig-2>
 
+@fig-2 presents linear classification results. Loss quickly decreases while accuracy reaches nearly 100%, indicating successful convergence. The bottom plots show decision boundaries learned by median and worst models. Both successfully separate the two classes, though the worst model's boundary has a suboptimal orientation.
+
+=== XOR Problem and Non-linearity
+The XOR problem requires non-linear decision boundaries. We implemented activation functions (`ReLU`, `Sigmoid`, `TanH`) as modules and created multi-layer networks using the `Sequential` container.
+
+A key implementation challenge was managing the backward pass through multiple layers, correctly propagating gradients through non-linearities.
+
 #figure(caption: [
-  This figure displays training results from $100$ non-linear classification
-  trials ($n=100$) with $200$ samples per run ($sigma=200$), learning rate
-  $0.01$ ($eta=0.01$), and $1000$ epochs ($cal(E)=1000$). The top plot shows
-  the interquartile mean loss and Q1-Q3 range during training, while the bottom
-  plots contrast the median and worst performing models from the ensemble.
+  *Non-linear classification training results.* Top: Loss evolution over training epochs, showing interquartile mean (IQM) and interquartile range (IQR). Middle: Accuracy improvement during training. Bottom: Comparison of median and worst models, showing complex decision boundaries separating XOR pattern classes. Models contained one hidden layer with 8 neurons and sigmoid activation, trained for 256 epochs with learning rate 0.01 and batch size 32.
 ], image("./figures/non_linear_classification.svg")) <fig-3>
 
-== MNIST classification
+@fig-3 shows our non-linear classification results on the XOR problem. The model successfully learns a non-linear decision boundary, separating the four quadrants into two classes. Both median and worst models capture the XOR pattern, though the worst model shows more classification errors. The curved decision boundaries demonstrate the network's ability to model non-linear relationships.
 
-The MNIST dataset is a fundamental benchmark in the field of machine learning and computer vision. It consists of 60,000 training and 10,000 test grayscale images of handwritten digits, each of size $28times 28$ pixels, flattened into vectors of 784 dimensions. The classification task involves assigning each image to one of 10 digit classes (0 through 9).
+=== MNIST Classification Implementation
+Building on our multi-layer framework, we implemented MNIST digit classification using deeper networks. We created a `Sequential` model with two hidden layers followed by a softmax output layer.
 
-To solve this problem, we designed a multi-layer perceptron (MLP). The network architecture consists of two fully connected hidden layers, each followed by a non-linear activation function, and a final softmax output layer. The softmax layer converts the raw outputs (logits) into a probability distribution over the 10 classes. The model is trained using categorical cross-entropy loss, which is appropriate for multi-class classification.
-
-@fig-4 illustrates the evolution of the training and validation loss as well as accuracy over time. As expected, the training loss decreases steadily, and validation accuracy increases over the course of training. The convergence pattern indicates the model generalizes well, with minimal overfitting. These results validate the effectiveness of our network design and optimization strategy on this task. The model stop to learn after five epochs and \~96% accuracy.
+Training on MNIST required handling larger data volumes and implementing data batching strategies. We also added validation during training to monitor for overfitting.
 
 #figure(caption: [
-  The figure displays training and validation loss (resp. accuracy) for the
-  MNIST classification task. The model is a sequential model with two hidden layers of 64 then 32 neurons and a softmax output layer. The model is trained with the Adam optimizer, a learning rate of 0.001, a batch size of 128 and 50 epochs. The activation function of the first layer is ReLU.
-  The model is trained on the MNIST dataset, which consists of 60,000 training images and 10,000 test images. The model is evaluated on the test set after training.
-  The last figure shows two examples of misclassified images.
+  *MNIST classification training results.* Top: Training and validation loss over epochs. Middle: Training and validation accuracy over epochs, reaching 97% test accuracy. Bottom: Examples of misclassified digits, showing challenging cases where the model made errors. Model used two hidden layers (64 and 32 neurons) with ReLU activation, trained with Adam optimizer, learning rate 0.001, and batch size 128.
 ], image("./figures/mnist_classification.svg")) <fig-4>
 
-== Activation functions experiments
+@fig-4 presents MNIST classification results. Training and validation losses decrease smoothly, while accuracy increases to approximately 97%. The model converges rapidly, with most improvement occurring in the first 5-10 epochs. The bottom images show examples of misclassified digits, illustrating challenging cases where visual ambiguity led to errors.
 
-Activation functions play a crucial role in the learning dynamics of neural networks. They introduce non-linearity into neural networks, allowing them to approximate complex, non-linear functions. Without non-linear activations, a network with multiple layers would be equivalent to a single linear transformation. Choosing an appropriate activation function is therefore crucial for enabling the network to model the structure of the data.
+== MNIST Classification & Hyperparameter Analysis
 
-We compare the performance of three common non-linear activation functions: ReLU, Sigmoid, and TanH. Each function is used in the first hidden layer of an otherwise identical model, which includes two hidden layers of sizes 64 and 32, and a softmax output layer.
-
-The activation functions are defined as follows:
-
-*ReLU* (Rectified Linear Unit):
-  $f(x) = max(0, x)$
-
-*Sigmoid*:
-  $f(x) = 1/(1 + e^{-x})$
-
-*TanH* (Hyperbolic Tangent):
-  $f(x) = {e^x - e^{-x}}/{e^x + e^{-x}}$
-
-As shown in @fig-5, TanH and ReLU largely outperforms the Sigmoid activation function in terms of final test accuracy. TanH seems a little bit better than ReLU but it must be reminded that we trained the networks on a simple dataset and only have two hidden layers. In practice, in more advanced networks, ReLU attenuates the vanishing gradient problem. It must also be precised that it converge way faster and is way cheaper in calculation time because of its simplicity. These results confirm ReLU as a robust default choice for modern neural networks.
+After establishing our base MNIST model, we conducted systematic experiments to analyze how different hyperparameters affect performance. These experiments help understand which factors most significantly impact neural network training and generalization.
 
 #figure(caption: [
-  Accuracy of the model with different activation functions on MNIST dataset. The model is a sequential model with two hidden layers of 64 then 32 neurons and a softmax output layer. The model is trained with the Adam optimizer, a learning rate of 0.001, a batch size of 128 and 50 epochs. The activation function of the first layer is either TanH, Sigmoid or ReLU.
+  *Activation function performance comparison.* Box plots showing accuracy distributions across 15 training runs for different activation functions (ReLU, Sigmoid, TanH). Each model used identical architecture (two hidden layers with 64 and 32 neurons) and training parameters (Adam optimizer, learning rate 0.001, batch size 128, 50 epochs). TanH and ReLU demonstrate similar performance, both significantly outperforming Sigmoid.
 ], image("./figures/mnist_activation.svg")) <fig-5>
 
-== Batch experiments
+=== Activation Function Comparison
+Activation functions determine the non-linear properties of neural networks. We compared three common functions: ReLU, Sigmoid, and TanH, while keeping all other parameters constant.
 
-Batch size refers to the number of training samples used in a single forward and backward pass during training. It impacts both training stability and computational efficiency. Larger batches make better use of parallel computation (e.g., on GPUs), but too-large batches can lead to poor generalization and slower convergence. They may cause the optimizer to get stuck in sharp minima or plateaus. Smaller batches introduce noise in the gradient estimates, which can help escape local minima but can also destabilize training and convergence stability. We evaluate several batch sizes to assess their impact on training dynamics and final accuracy.
+@fig-5 reveals that TanH and ReLU significantly outperform Sigmoid on MNIST classification. TanH shows slightly higher median accuracy, but ReLU offers computational advantages due to its simpler derivative. The poor performance of Sigmoid likely stems from its tendency to saturate, causing gradient vanishing during backpropagation. These results confirm ReLU as a sensible default for most neural network applications.
 
-In @fig-6, we observe that medium-sized batches strike a good balance between convergence speed and final accuracy. These results suggest that batch size is a key hyperparameter for controlling the stability and efficiency of training. 64 samples per batch, even if it achieves the highest accuracy, has a large variance typical of a low number of samples per batch. On MNIST dataset, 128 samples per batch seem to be a good compromise between accuracy and variance.
+=== Batch Size Optimization
+Batch size affects both training stability and computational efficiency. We tested batch sizes ranging from 8 to 256 samples to identify optimal values.
 
 #figure(caption: [
-  Accuracy of the model with different batch sizes on MNIST dataset. The model is a sequential model with two hidden layers of 64 then 32 neurons and a softmax output layer. The model is trained with the Adam optimizer, a learning rate of 0.001 and 50 epochs. The activation function of the first layer is ReLU.
+  *Batch size impact on model performance.* Box plots showing accuracy distributions across 15 training runs for different batch sizes (8, 16, 32, 64, 128, 256). All models used identical architecture (two hidden layers with 64 and 32 neurons, ReLU activation) and training parameters (Adam optimizer, learning rate 0.001, 50 epochs). Medium batch sizes (64-128) achieve the best balance between performance and stability.
 ], image("./figures/mnist_batch.svg")) <fig-6>
 
-== Hidden layers size experiments
+@fig-6 demonstrates that medium batch sizes (64-128) achieve the best performance. Smaller batches (8-16) show higher variance in results, indicating less stable training. Very large batches (256) slightly reduce accuracy, possibly due to less frequent parameter updates. The batch size of 64 yields the highest median accuracy, though with higher variance than 128, suggesting a trade-off between performance and training stability.
 
-The size of each hidden layer determines the capacity of the network to model complex functions. A layer with too few neurons may underfit the data, failing to capture its patterns. Conversely, too many neurons can overfit or introduce unnecessary computation.
-
-We investigate how the number of neurons in hidden layers affects classification performance. We experiment with models containing two hidden layers, each having 16, 32, 64, or 128 neurons.
-
-As shown in @fig-7, increasing the number of neurons improves accuracy up to a point. The model with [64, 64] hidden neurons achieves high accuracy, while [128, 128] offers only marginal improvement by a few tenths of a percent. Models with [16, 16] or [32, 32] neurons underperform due to insufficient capacity to model the data complexity. These findings highlight the importance of finding an appropriate trade-off between model capacity and overfitting risk.
+=== Hidden Layer Architecture
+The size and structure of hidden layers determine the network's capacity to model complex patterns. We experimented with different hidden layer configurations to assess their impact on performance.
 
 #figure(caption: [
-  Accuracy of the model with different numbers of hidden layers on MNIST dataset. The model is a sequential model with hidden layers of sizes 16, 32, 64, and 128 neurons (e.g., [16, 16], [32, 32], [64, 64], [128, 128]) and a softmax output layer. The model is trained with the Adam optimizer, a learning rate of 0.001, a batch size of 128, and 50 epochs. The activation function of the first layer is ReLU.
+  *Hidden layer size comparison.* Box plots showing accuracy distributions across 15 training runs for different hidden layer sizes (16, 32, 64, 128 neurons per layer in a two-layer network). All models used identical training parameters (ReLU activation, Adam optimizer, learning rate 0.001, batch size 128, 50 epochs). Larger hidden layers generally yield better performance up to a point of diminishing returns.
 ], image("./figures/mnist_hidden.svg")) <fig-7>
 
-== Optimizers
+@fig-7 shows that increasing hidden layer size generally improves performance up to a point. The model with 64 neurons per layer achieves high accuracy, while further increase to 128 offers marginal improvement at the cost of additional parameters. Smaller networks (16-32 neurons) underperform, likely lacking capacity to capture the full complexity of handwritten digits. These results indicate that moderate-sized networks offer the best balance between performance and computational efficiency for MNIST.
 
-The optimizer determines how the model's parameters are updated during training based on gradients. Different optimizers implement different update rules and tradeoffs between speed of convergence, stability, and generalization. We compare the standard SGD, SGD with momentum, and Adam, a popular adaptive gradient method.
-
-SGD (Stochastic Gradient Descent) updates weights using noisy gradient estimates based on mini-batches. It is simple but is slow and can get stuck in local minima. SGD with Momentum incorporates a moving average of past gradients to accelerate convergence and smooth updates. Helps escape shallow minima and navigate ravines. Adam (Adaptive Moment Estimation) combines momentum and per-parameter adaptive learning rates. It maintains estimates of both first and second moments of gradients. Adam is known for fast convergence and robust performance across a wide range of tasks.
-
-@fig-8 shows that Adam consistently leads to better final accuracy. This reflects the benefit of adaptive learning rates and momentum for deep learning. It is making it well-suited for training deep models. While SGD with momentum improves over vanilla SGD, it still lags behind Adam in performance. These results support the widespread use of Adam as a reliable optimizer in neural network training.
+=== Optimizer Comparison
+Optimizers control how parameters are updated during training. We compared three optimization algorithms: standard SGD, SGD with momentum, and Adam.
 
 #figure(caption: [
-  Accuracy for the classic SGD optimizer, SGD with Momentum and the Adam optimizer on MNIST dataset. The model is a sequential model with two hidden layers of 64 then 32 neurons and a softmax output layer. The model is trained with a learning rate of 0.001, a batch size of 128 and 50 epochs. The activation function of the first layer is ReLU.
+  *Optimizer performance comparison.* Box plots showing accuracy distributions across 15 training runs for different optimizers (SGD, SGD with Momentum, Adam). All models used identical architecture (two hidden layers with 64 and 32 neurons, ReLU activation) and consistent hyperparameters (learning rates adjusted per optimizer: 0.01 for SGD variants, 0.001 for Adam; batch size 128, 50 epochs). Adam consistently outperforms both SGD variants.
 ], image("./figures/mnist_optimizer.svg")) <fig-8>
+
+@fig-8 demonstrates Adam's superior performance compared to both SGD variants. Adam combines adaptive learning rates with momentum, allowing faster convergence and better final accuracy. SGD with momentum shows improvement over vanilla SGD but still lags behind Adam. The reduced variance in Adam's results also indicates more consistent training outcomes, making it a reliable choice for neural network optimization.
+
+These experiments highlight the importance of hyperparameter selection in neural network performance. They demonstrate that even simple architectures can achieve strong results when configured appropriately. For MNIST, the optimal configuration uses ReLU or TanH activation, moderate batch sizes (64-128), hidden layers with 64+ neurons, and the Adam optimizer.
+
+
+== Autoencoder Implementation & Analysis
+
+=== Autoencoder Architecture
+Autoencoders are neural networks trained to reconstruct their input after passing through a constrained latent space. Our implementation consists of an encoder that compresses input data and a decoder that reconstructs it, sharing a symmetric architecture:
+
+- *Encoder*: Sequence of linear layers with decreasing dimensions
+- *Latent space*: Bottleneck layer representing compressed information
+- *Decoder*: Sequence of linear layers with increasing dimensions
+
+We implemented autoencoders using our modular framework, reusing components like `Linear` and various activation functions. This modularity allowed us to easily experiment with different architectures and hyperparameters.
+
+=== Latent Space Dimensionality Study
+We conducted a systematic study of how latent dimension and network depth affect reconstruction quality, comparing MSE and cross-entropy loss functions.
+
+@fig-9 reveals several key insights about autoencoder design. First, increasing latent dimension consistently improves reconstruction quality across both loss functions. This is expected as larger latent spaces can retain more information about the input. Second, deeper networks generally outperform shallow ones, with depth 3-5 showing the best results. The improvement plateaus at greater depths, suggesting diminishing returns beyond a certain architectural complexity.
+
+
+#figure(caption: [
+  *Latent dimension and depth impact on reconstruction quality.* Heatmaps showing reconstruction loss for different combinations of latent dimensions (y-axis: 4, 8, 16, 32, 64) and network depths (x-axis: 1-5). Left: MSE loss results. Right: Cross-entropy loss results. Darker colors indicate better reconstruction quality. Models were trained on MNIST with identical parameters except for the studied dimensions.
+], image("./figures/autoencoder_matrix.svg")) <fig-9>
+
+Notably, cross-entropy loss appears more sensitive to latent dimension size than MSE, showing more dramatic improvement as dimension increases. This reflects cross-entropy's properties as a loss function that strongly penalizes incorrect probability predictions at pixel level.
+
+=== Latent Space Visualization
+To understand what information the autoencoder captures, we visualized the latent representations of MNIST digits.
+
+Figure <fig-10> demonstrates that even with significant dimensionality reduction (from 784 to 32), the autoencoder successfully preserves the key visual characteristics of each digit. The reconstructions appear slightly smoother than originals, suggesting the model learns to filter noise while retaining essential features.
+
+=== t-SNE Visualization and KNN Classification
+To further examine the latent space structure, we applied t-SNE dimensionality reduction to visualize the 4-dimensional latent space in 2D.
+
+Figure <fig-11> reveals that the autoencoder organizes digits into distinct clusters in latent space, despite being trained without class labels. This emergent structure suggests the model learns meaningful features that naturally separate digit classes. Digits with similar visual characteristics (like 4 and 9, or 3, 5, and 8) appear closer in the latent space, reflecting their visual similarity.
+
+#figure(caption: [
+  *Original and reconstructed MNIST digits.* Examples showing original digits (left) and their reconstructions (right) from an autoencoder with latent dimension 32 and depth 5. The model successfully captures essential visual characteristics of each digit while smoothing out noise and variations, indicating effective compression of relevant features.
+], image(height: 70%, "./figures/mnist_reconstructions.svg")) <fig-10>
+
+
+#figure(caption: [
+  *t-SNE visualization of latent space representations.* 2D projection of the 4-dimensional latent space representations of MNIST test set, colored by digit class. The clear clustering by digit class indicates the autoencoder has learned digit-specific features despite being trained without class labels. Note how similar digits (e.g., 4-9, 3-5-8) appear closer in the latent space.
+], image("./figures/latent_space_tsne.svg")) <fig-11>
+
+To quantify the discrimination power of these learned representations, we trained a KNN classifier (k=5) on the latent codes:
+
+#figure(table(columns: 6,
+  [Class], [TP], [FP], [FN], [TN], [Accuracy],
+  [], [], [], [], [], [],
+  [ 0     ], [ 914   ], [ 123   ], [ 66    ], [ 8897   ], [ 0.9811   ],
+  [ 1     ], [ 1113  ], [ 42    ], [ 22    ], [ 8823   ], [ 0.9936   ],
+  [ 2     ], [ 889   ], [ 172   ], [ 143   ], [ 8796   ], [ 0.9685   ],
+  [ 3     ], [ 762   ], [ 330   ], [ 248   ], [ 8660   ], [ 0.9422   ],
+  [ 4     ], [ 790   ], [ 356   ], [ 192   ], [ 8662   ], [ 0.9452   ],
+  [ 5     ], [ 534   ], [ 209   ], [ 358   ], [ 8899   ], [ 0.9433   ],
+  [ 6     ], [ 869   ], [ 146   ], [ 89    ], [ 8896   ], [ 0.9765   ],
+  [ 7     ], [ 853   ], [ 118   ], [ 175   ], [ 8854   ], [ 0.9707   ],
+  [ 8     ], [ 681   ], [ 167   ], [ 293   ], [ 8859   ], [ 0.9540   ],
+  [ 9     ], [ 692   ], [ 240   ], [ 317   ], [ 8751   ], [ 0.9443   ],
+  [], [], [], [], [], [],
+  [ Total ], [ 8097  ], [ 1903  ], [ 1903  ], [ 88097  ], [ 0.9619   ],
+))
+
+The high classification accuracy (96.19%) confirms that the latent space effectively captures digit-specific features. Notably, digits like "1" achieve exceptional accuracy (99.36%), likely due to their distinctive shape, while more ambiguous digits like "5" and "3" show lower performance.
+
+=== Latent Space Centroids and Interpolation
+To explore the semantic structure of the latent space, we computed centroid vectors for each digit class and visualized interpolations between them.
+
+#figure(caption: [
+  *Interpolation between digit centroids in latent space.* Grid showing reconstructions from latent vectors interpolated between digit class centroids. Diagonal elements represent pure class centroids, while off-diagonal elements show 50% interpolation between row and column digit centroids. The smooth transitions between digits reveal the continuous nature of the learned latent space.
+], image("./figures/latent_centroids_interpolation.svg")) <fig-12>
+
+Figure <fig-12> provides insights into the semantic organization of the latent space. The diagonal elements represent "prototypical" digits reconstructed from class centroids, showing idealized versions of each digit. The off-diagonal elements reveal how the model interpolates between digit classes. Some transitions appear natural (e.g., $4->9$ or $3->8$) while others create unusual hybrid digits. This confirms that the latent space is continuous and semantically organized, with nearby points representing similar visual concepts.
+
+This interpolation capability demonstrates that the autoencoder has learned a meaningful compressed representation rather than simply memorizing training examples. The latent space captures the underlying manifold of handwritten digits, allowing navigation between different digit concepts.
+
+=== Denoising Capabilities
+We extended our autoencoder to perform denoising by training it to reconstruct clean images from artificially corrupted inputs. The model was trained with Gaussian noise at a moderate level ($sigma = 0.2$) but proved capable of handling much stronger corruption.
+
+#figure(caption: [
+  *Denoising results at training noise level.* Pairs of noisy inputs (left) and their reconstructions (right) for each digit class (0-9), using the same noise level ($sigma = 0.2$) that the model was trained on. The reconstructions clearly preserve digit identity while removing noise artifacts, demonstrating the model's effectiveness at its trained task.
+], image(height: 50%, "./figures/mnist_denoising_reconstructions.svg")) <fig-13>
+
+Figure <fig-13> shows the model's performance at its trained noise level ($sigma = 0.2$). The reconstructions are clean and accurate, with noise effectively removed while maintaining the essential characteristics of each digit. This confirms the model successfully learned to distinguish between meaningful digit features and random noise during training.
+
+#figure(caption: [
+  *Denoising generalization to severe noise.* Pairs of heavily corrupted inputs (left) and their reconstructions (right) for each digit class (0-9), using noise level ($sigma = 0.6$) three times stronger than training conditions. Despite never seeing such extreme corruption during training, the autoencoder successfully recovers recognizable digits, demonstrating remarkable generalization capability.
+], image(height: 50%, "./figures/mnist_high_denoising_reconstructions.svg")) <fig-14>
+
+Figure <fig-14> demonstrates the model's remarkable generalization capability when faced with much more severe noise ($sigma = 0.6$) than it was trained on. Even with corruption levels that make digits nearly unrecognizable to human observers, the autoencoder successfully reconstructs clear, identifiable digits. This suggests the model has learned deep, robust representations that capture the fundamental structure of each digit class.
+
+The strong generalization to higher noise levels indicates the autoencoder didn't simply memorize noise-removal patterns but instead learned to identify invariant features that define digit identity regardless of noise intensity. This ability to extract essential signal from previously unseen levels of noise suggests potential applications in various domains where signal recovery from unexpected corruption levels is required.
+
+The preserved classification accuracy even under extreme noise demonstrates the robustness of the learned representations and their potential utility as preprocessing for downstream tasks in challenging, noisy environments.
+
+== Conclusion
+
+This project implemented a modular neural network framework from first principles using NumPy. Beginning with linear regression, we progressively developed components for classification, multi-layer architectures, and autoencoders. The modular design proved valuable, allowing systematic experimentation with different architectures and hyperparameters.
+
+Our experiments yielded several practical insights. For MNIST classification, we found that ReLU and TanH activations significantly outperform Sigmoid, medium batch sizes (64-128) offer the best balance between performance and stability, and the Adam optimizer consistently delivers superior results compared to SGD variants. These findings align with established best practices in the field.
+
+The autoencoder experiments demonstrated how neural networks can learn meaningful representations without explicit supervision. The latent space analysis revealed emergent organization of digit classes and robust feature extraction, as evidenced by the high KNN classification accuracy (96.19%) and impressive denoising capabilities even under severe corruption conditions.
+
+While our implementation is not optimized for production use, it successfully demonstrates core neural network principles and provides a foundation for understanding more complex architectures. The framework's limitations include lack of GPU acceleration and absence of more advanced techniques like batch normalization or dropout, which would be natural extensions to this work.
