@@ -5,13 +5,33 @@ benchmark:
   just benchmark-linear-regression
   just benchmark-linear-classification
   just benchmark-non-linear-classification
+  just benchmark-non-linear-classification-adam
   just benchmark-mnist
+  just benchmark-optimizer-comparison
+  just benchmark-activation-functions
+  just benchmark-batch-size
+  just benchmark-hidden-size
+  just benchmark-autoencoder-matrix
+  just benchmark-autoencoder-denoiser
+  just benchmark-initialization
+  just benchmark-hidden-layers_relu
 
 visualize:
   just visualize-linear-regression
   just visualize-linear-classification
   just visualize-non-linear-classification
-  just visualize-mnist
+  just visualize-non-linear-classification-adam
+  just visualize-optimizer-comparison
+  just visualize-activation-functions
+  just visualize-batch-size
+  just visualize-hidden-size
+  just visualize-autoencoder-matrix
+  just visualize-autoencoder-examples
+  just visualize-latent-space
+  just visualize-latent-centroids
+  just visualize-autoencoder-denoiser
+  just visualize-initialization
+  just visualize-hidden-layers_tanh
 
 benchmark-linear-regression:
   @uv run scripts/benchmark_linear_regression.py
@@ -99,9 +119,6 @@ benchmark-hidden-layers_relu:
 
 visualize-hidden-layers_tanh:
   @uv run scripts/visualize_hidden_layers_tanh.py
-
-test:
-  @uv run pytest
 
 paper:
   @typst watch paper/paper.typ
