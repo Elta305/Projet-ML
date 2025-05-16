@@ -320,3 +320,5 @@ Our experiments yielded several practical insights. For MNIST classification, we
 The autoencoder experiments demonstrated how neural networks can learn meaningful representations without explicit supervision. The latent space analysis revealed emergent organization of digit classes and robust feature extraction, as evidenced by the high KNN classification accuracy (96.19%) and impressive denoising capabilities even under severe corruption conditions.
 
 While our implementation is not optimized for production use, it successfully demonstrates core neural network principles and provides a foundation for understanding more complex architectures. The framework's limitations include lack of GPU acceleration and absence of more advanced techniques like batch normalization or dropout, which would be natural extensions to this work.
+
+All code used in this project is freely available under the GPLv3 license at https://github.com/Elta305/Projet-ML.
