@@ -133,6 +133,8 @@ publish:
   cp -r scripts/*.py ML-paulchambaz-fredericlicombeau/scripts
   cp paper/paper.pdf ML-paulchambaz-fredericlicombeau
   cp README.md ML-paulchambaz-fredericlicombeau
+  cp pyproject.toml ML-paulchambaz-fredericlicombeau
+  cp uv.lock ML-paulchambaz-fredericlicombeau
   zip -r ML-paulchambaz-fredericlicombeau.zip ML-paulchambaz-fredericlicombeau
   rm -fr ML-paulchambaz-fredericlicombeau
   mkdir -p dist

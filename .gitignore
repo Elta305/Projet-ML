@@ -162,3 +162,5 @@ CMakeCache.txt
 
 # Add any other project-specific ignores here
 results/*
+datasets/*
+data/*
