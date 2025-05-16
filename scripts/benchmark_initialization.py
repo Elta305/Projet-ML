@@ -1,15 +1,18 @@
 import pickle
 from pathlib import Path
+
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
 from utils import get_batches, get_mnist
+
 from mlp.activation import ReLU
 from mlp.linear import Linear
 from mlp.loss import CrossEntropyLoss
 from mlp.optim import Adam
 from mlp.sequential import Sequential
 from mlp.utils import one_hot_encoding
+
 
 def train_with_early_stopping(
     model,

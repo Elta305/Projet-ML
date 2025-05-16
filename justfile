@@ -73,6 +73,9 @@ benchmark-autoencoder-matrix:
 visualize-autoencoder-matrix:
   @uv run scripts/visualize_autoencoder_matrix.py
 
+visualize-autoencoder-examples:
+  @uv run scripts/visualize_autoencoder_examples.py
+
 benchmark-autoencoder-denoiser:
   @uv run scripts/benchmark_autoencoder_denoiser.py
 

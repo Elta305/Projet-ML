@@ -33,7 +33,7 @@ def train_denoising_autoencoder(
     input_dim = x_train.shape[1]
 
     model = create_autoencoder(input_dim, latent_dim, depth)
-    loss_fn = MSELoss()
+    loss_fn = CrossEntropyLoss()
     optimizer = Adam(model, loss_fn, eps=learning_rate)
 
     best_val_loss = float("inf")
@@ -82,23 +82,26 @@ def main():
     model = train_denoising_autoencoder(
         x_train=x_train,
         x_val=x_val,
-        latent_dim=32,
-        depth=2,
+        latent_dim=64,
+        depth=3,
         noise_factor=0.2,
         batch_size=128,
         learning_rate=0.001,
-        max_epochs=200,
+        max_epochs=500,
         patience=5,
         seed=seed,
     )
 
-    results = evaluate_autoencoder(model, x_train, 0.2)
+    results = {
+        "loss": evaluate_autoencoder(model, x_train, 0.2),
+        "model": model.state_dict(),
+    }
 
     print(results)
 
-    # Path("results").mkdir(exist_ok=True)
-    # with open("results/mnist_hidden.pkl", "wb") as f:
-    #     pickle.dump(results, f)
+    Path("results").mkdir(exist_ok=True)
+    with open("results/autoencoder_denoiser.pkl", "wb") as f:
+        pickle.dump(results, f)
 
 
 if __name__ == "__main__":

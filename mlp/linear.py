@@ -8,69 +8,28 @@ logger = logging.getLogger(__name__)
 
 
 class Linear(Module):
-    def __init__(self, input_size, output_size, init="he_normal", use_bias=True):
+    def __init__(self, input_size, output_size, use_bias=True):
         super().__init__()
         self.input_size = input_size
         self.output_size = output_size
         self.use_bias = use_bias
 
-        self._parameters, self._gradient, self._bias, self._gradient_bias = self.init_parameters(input_size, output_size, init, use_bias)
-        
+        std_dev = np.sqrt(2.0 / input_size)
+        self.parameters = np.random.normal(
+            0.0, std_dev, (input_size, output_size)
+        )
+        self.gradient = np.zeros((input_size, output_size))
+
+        if self.use_bias:
+            self.bias = np.random.normal(0.0, std_dev, (1, self.output_size))
+            self.gradient_bias = np.zeros((1, output_size))
+
         logger.debug(
             f"Initialized linear layer with "
             f"input size: {input_size}, "
             f"output size: {output_size}, "
             f"bias: {use_bias}"
         )
-
-    def init_parameters(self, input_size, output_size, init, use_bias):
-        if init == "random":
-            parameters = np.random.rand(input_size, output_size)
-            gradient = np.zeros_like(parameters)
-            bias = np.random.rand(1, output_size) if use_bias else None
-            gradient_bias = np.zeros_like(bias) if use_bias else None
-            return parameters, gradient, bias, gradient_bias
-        if init == "normal":
-            parameters = np.random.randn(input_size, output_size)
-            gradient = np.zeros_like(parameters)
-            bias = np.random.randn(1, output_size) if use_bias else None
-            gradient_bias = np.zeros_like(bias) if use_bias else None
-            return parameters, gradient, bias, gradient_bias
-        if init == "uniform":
-            limit = np.sqrt(6 / (input_size + output_size))
-            parameters = np.random.uniform(-limit, limit, (input_size, output_size))
-            gradient = np.zeros_like(parameters)
-            bias = np.random.uniform(-limit, limit, (1, output_size)) if use_bias else None
-            gradient_bias = np.zeros_like(bias) if use_bias else None
-            return parameters, gradient, bias, gradient_bias
-        if init == "he_normal":
-            std_dev = np.sqrt(2 / self._input_size)
-            parameters = np.random.normal(0, std_dev, (input_size, output_size))
-            gradient = np.zeros_like(parameters)
-            bias = np.random.normal(0, std_dev, (1, output_size)) if use_bias else None
-            gradient_bias = np.zeros_like(bias) if use_bias else None
-            return parameters, gradient, bias, gradient_bias
-        if init == "he_uniform":
-            limit = np.sqrt(6 / (input_size + output_size))
-            parameters = np.random.uniform(-limit, limit, (input_size, output_size))
-            gradient = np.zeros_like(parameters)
-            bias = np.random.uniform(-limit, limit, (1, output_size)) if use_bias else None
-            gradient_bias = np.zeros_like(bias) if use_bias else None
-            return parameters, gradient, bias, gradient_bias
-        if init == "xavier_normal":
-            std_dev = np.sqrt(2 / (input_size + output_size))
-            parameters = np.random.normal(0, std_dev, (input_size, output_size))
-            gradient = np.zeros_like(parameters)
-            bias = np.random.normal(0, std_dev, (1, output_size)) if use_bias else None
-            gradient_bias = np.zeros_like(bias) if use_bias else None
-            return parameters, gradient, bias, gradient_bias
-        if init == "xavier_uniform":
-            limit = np.sqrt(6 / (input_size + output_size))
-            parameters = np.random.uniform(-limit, limit, (input_size, output_size))
-            gradient = np.zeros_like(parameters)
-            bias = np.random.uniform(-limit, limit, (1, output_size)) if use_bias else None
-            gradient_bias = np.zeros_like(bias) if use_bias else None
-            return parameters, gradient, bias, gradient_bias
 
     def forward(self, x):
         assert x.shape[1] == self.input_size, (

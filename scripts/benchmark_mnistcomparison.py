@@ -1,18 +1,17 @@
 import pickle
 from pathlib import Path
 
-import numpy as np
-from tqdm import tqdm
 import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
 from utils import get_batches, get_mnist
 
-from mlp.activation import TanH, ReLU, Softmax
+from mlp.activation import ReLU, Softmax, TanH
 from mlp.linear import Linear
 from mlp.loss import CrossEntropyLoss
 from mlp.optim import Adam
 from mlp.sequential import Sequential
 from mlp.utils import one_hot_encoding
-import pandas as pd
 
 
 def train_mnist_classifier(

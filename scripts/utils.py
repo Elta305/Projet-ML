@@ -400,7 +400,6 @@ def create_autoencoder(input_dim, latent_dim, depth):
         dims.append(dim)
 
     reversed_dims = list(reversed(dims))
-
     autoencoder_dims = (
         [input_dim] + dims + [latent_dim] + reversed_dims + [input_dim]
     )
@@ -408,8 +407,9 @@ def create_autoencoder(input_dim, latent_dim, depth):
     layers = []
     for i in range(len(autoencoder_dims) - 1):
         layers.append(Linear(autoencoder_dims[i], autoencoder_dims[i + 1]))
-        if i < len(autoencoder_dims) - 1:
+        if i < len(autoencoder_dims) - 2:
             layers.append(ReLU())
+
     layers.append(Sigmoid())
 
     return Sequential(*layers)

@@ -5,7 +5,7 @@ import numpy as np
 from matplotlib.gridspec import GridSpec
 from utils import compute_stats, get_batches, get_mnist
 
-from mlp.activation import TanH, Softmax
+from mlp.activation import Softmax, TanH
 from mlp.linear import Linear
 from mlp.loss import CrossEntropyLoss
 from mlp.optim import Adam
