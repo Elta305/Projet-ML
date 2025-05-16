@@ -101,7 +101,7 @@ Our experiments across multiple neural network architectures demonstrate:
 ## Authors
 
 - [Paul Chambaz](https://www.linkedin.com/in/paul-chambaz-17235a158/)
-- [Frédéric Li Combeau](https://linkedin.com/)
+- [Frédéric Li Combeau](https://www.linkedin.com/in/frederic-li-combeau/)
 
 ## License
 
